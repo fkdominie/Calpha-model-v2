@@ -364,7 +364,6 @@ void histo_tors(int iflag,int ia) {
 void histoe(int iflag,double x) {
   static double low=-100.0,high=200.0;
   static double his[NBIN],eps;
-  static int out=0;
   int j,k;
   char str[100];
   FILE *fp;
@@ -385,8 +384,7 @@ void histoe(int iflag,double x) {
     if (x>low && x<high) {
       k=(x-low)/eps;
       his[k]++;
-    } else
-      out++;
+    } 
     return;
   }
 
@@ -396,14 +394,12 @@ void histoe(int iflag,double x) {
     for (k=0;k<NBIN;k++)
       if (j!=0) fprintf(fp,"%f %.15e\n",low+(k+.5)*eps,his[k]/j/eps);
     fclose(fp);
-    //    printf("e out %i\n",out);
   }
 }
 /****************************************************************************/
 void histormsd(int iflag,double x) {
   static double low=0.0,high=40.0;
   static double his[NBIN],eps;
-  static int out=0;
   int j,k;
   char str[100];
   FILE *fp;
@@ -423,8 +419,7 @@ void histormsd(int iflag,double x) {
     if (x>low && x<high) {
       k=(x-low)/eps;
       his[k]++;
-    }else
-      out++;
+    }
     return;
   }
 
@@ -437,12 +432,11 @@ void histormsd(int iflag,double x) {
     for (k=0;k<NBIN;k++)
       if (j!=0) fprintf(fp,"%f %.15e\n",low+(k+.5)*eps,his[k]/j/eps);
     fclose(fp);
-    //    printf("rmsd out %i\n",out);
   }
 }
 /****************************************************************************/
 void histoq1(int iflag, int x) {
-  static int nc,his[MAXNC],out=0;
+  static int nc,his[MAXNC];
   int j;
   char str[100];
   FILE *fp;
@@ -462,9 +456,6 @@ void histoq1(int iflag, int x) {
   if (iflag==0) {
     if (x>=0 && x<=nc)
       his[x]++;
-   
-    else
-      out++;
     return;
   }
 
@@ -474,7 +465,6 @@ void histoq1(int iflag, int x) {
 
     fp = fopen(str,"w");
       for (j=0;j<=nc;j++) fprintf(fp,"%i %i\n",j,his[j]);
-    //    printf("q1 out %i\n",out);
     fclose(fp);
   }
 }
@@ -482,7 +472,6 @@ void histoq1(int iflag, int x) {
 void historg(int iflag,double x) {
   static double low=5.0,high=40.0;
   static double his[NBIN],eps;
-  static int out=0;
   int j,k;
   char str[100];
   FILE *fp;
@@ -502,8 +491,7 @@ void historg(int iflag,double x) {
     if (x>low && x<high) {
       k=(x-low)/eps;
       his[k]++;
-    }else
-      out++;
+    }
     return ;
   }
 
@@ -516,7 +504,6 @@ void historg(int iflag,double x) {
     for (k=0;k<NBIN;k++)
       if (j!=0) fprintf(fp,"%f %.15e\n",low+(k+.5)*eps,his[k]/j/eps);
     fclose(fp);
-    //    printf("rg out %i\n",out);
   }
 }
 /****************************************************************************/

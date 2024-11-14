@@ -138,7 +138,7 @@ void update_g(double so[][NOBS],double g[]) {
 
 }
 /****************************************************************************/
-int read_checkpnt() {
+int read_checkpnt(void) {
   int i,err = 0;
   long orig;
   double echeck;
@@ -776,7 +776,7 @@ void read_bonded_param(char fn[],
 		       double v1[],double k1[],
 		       double v2[],double k2[],
 		       double v3[],double k3[], double k4[]) {
-  int j,n = 0;
+  int j;
   char str[100];
   FILE *fp;
   
@@ -794,7 +794,6 @@ void read_bonded_param(char fn[],
 	       v3[j],k3[j],k4[j]);
       } else
 	printf("<read_param> (%s) read error\n",fn);
-      ++n;
     }
   } 
 
