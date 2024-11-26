@@ -82,24 +82,24 @@ double cthmin,sthmin;
 double cont_df(double s1, double s2,double d);
 double cellcalc(int inc,int nl,short list[]);
 void log_sum_merge(double e1, double e2, double *e,
-		 double f1, double f2, double *f,
-		   double bet,double c);
+		   double f1, double f2, double *f,
+		   double bet);
 void crowd_ecalc(double *e, double *f,double r2,double sigma,double rho);
 void eseq_calc(int i,int j,double r2,double *es,double *fs);
 void bond_ecalc(double *e,double *f,double db,double kbond);
+void bend_ecalc_alt(double *e,double *f,double dth,double kbend,double th);
 void bend_ecalc(double *e,double *f,double dth,double kbend);
 void tors_ecalc(double *e,double *f,double dph,double k1,double k3);
-void cont_rep_ecalc(int iflag,double *e,double *f,double r2,double sig2,double kcont);
-void cont_att_ecalc(int iflag,double kstr,double r,
+void cont_rep_ecalc(double *e,double *f,double r2,double sig2,double kcont);
+void cont_att_ecalc(double kstr,double r,
 		    double *eg,double *eg1,double *eg2,
 		    double *fg,double *fg1,double *fg2,
 		    int im1,int jm1,int im2,int jm2, 
 		    double dg,double dg1,double dg2,
 		    double *rg1x,double *rg1y,double *rg1z,
 		    double *rg2x,double *rg2y,double *rg2z);
-void cont_gcalc(int iflag,double *e, double *f,double r, double r0,double kcont,double ksi);
-void cont_ecalc(int iflag,double *e,double *f,double sig2,double kcont,double r2);
-
+void cont_gcalc(double *e, double *f,double r, double r0,double kcont,double ksi);
+void cont_ecalc(double *e,double *f,double sig2,double kcont,double r2);
 double cont2(int iflag);
 double cont_corr(int iflag);
 void add_f(int i,int j,double fr,double rx,double ry,double rz);
@@ -107,41 +107,32 @@ void add_f(int i,int j,double fr,double rx,double ry,double rz);
 /***** ENERGIES & FORCES ****************************************************/
 /****************************************************************************/
 void add_f(int i,int j,double fr,double rx,double ry,double rz) {
-  if (i >= 0 && i <= N-1 && j >= 0 && j <= N-1) {
-    fx[i] += fr * rx;
-    fy[i] += fr * ry;
-    fz[i] += fr * rz;      
-    fx[j] -= fr * rx;
-    fy[j] -= fr * ry;
-    fz[j] -= fr * rz;
-  }
+  fx[i] -= fr * rx;
+  fy[i] -= fr * ry;
+  fz[i] -= fr * rz;      
+  fx[j] += fr * rx;
+  fy[j] += fr * ry;
+  fz[j] += fr * rz;
 }
 /****************************************************************************/
 void log_sum_merge(double e1, double e2, double *e,
 		   double f1, double f2, double *f,
-		   double bet, double c) {
-  double emax,fmax,wmin,wsum,del;
+		   double bet) {
+  double fmax,wsum,del;
 
-  if (e1 < e2) {
-    (*e) = e1;
-    (*f) = f1;
-    emax = e2;
-    fmax = f2;
-  } else {
-    (*e) = e2;
-    (*f) = f2;
-    emax = e1;
-    fmax = f1;
-  }
+  (*e) = (e1 < e2 ? e1 : e2);
+  (*f) = (e1 < e2 ? f1 : f2);
 
-  if ((del = bet * (emax - (*e))) > 100)
-    return ;
+  if ( (del = bet * fabs(e1 - e2)) > 100) return ;
+
+  fmax = (e1 < e2 ? f2 : f1);  
+  wsum = 1 + exp(-del);
   
-  wsum = 1 + (wmin = exp(- del));
+  (*e) = (*e) - log(wsum) / bet;
+  (*f) = ( (*f) + sgn(fmax) * exp(-del + log(fabs(fmax)) ) ) / wsum;
   
-  (*e) = (*e) - log(wsum) / bet + c;
-  (*f) = ( (*f) + fmax * wmin ) / wsum;
-
+  //  printf(" del %lf e %lf e1 %lf e2 %lf f %lf f1 %lf f2 %lf \n",del,(*e), e1,e2,(*f), f1,f2);
+  
   return;
 }
 /****************************************************************************/
@@ -347,7 +338,6 @@ double bond(int iflag) {
   if (FF_BOND == 0) return 0;
 
   if (iflag < 0) {
-    bet=10.0;
     printf("<bond> bet %lf\n",bet);
     return 0;
   }
@@ -356,18 +346,17 @@ double bond(int iflag) {
     for (k = 0; k < NCH; ++k) {
       for (i = iBeg[k]; i < iEnd[k]; ++i) {
 	j = i + 1;
-	//	printf("%i %lf %lf %lf\n",i,b[i],bn[i],kbond[i]);
 	db = b[i] - bn[i];	
 	bond_ecalc(&et,&fb,db,kbond[i]);
 	
 	if (FF_BOND == 2 && kbond2[i] != 0) {
 	  db2 = b[i] - bn2[i];
 	  bond_ecalc(&e2,&fb2,db2,kbond2[i]);
-	  log_sum_merge(e1=et,e2,&et,fb1=fb,fb2,&fb,bet,0);
+	  log_sum_merge(e1=et,e2,&et,fb1=fb,fb2,&fb,bet);
 	}
 
 	e += et;
-	
+
 	fbx = fb * bx[i];
 	fby = fb * by[i];
 	fbz = fb * bz[i];
@@ -377,7 +366,7 @@ double bond(int iflag) {
 	fz[i] -= fbz;
 	fx[j] += fbx;
 	fy[j] += fby;
-	fz[j] += fbz;
+	fz[j] += fbz; 
       }
     }
 
@@ -400,7 +389,7 @@ double bond(int iflag) {
 	  if (FF_BOND == 2 && kbond2[i] != 0) {
 	    db2 = bb - bn2[i];
 	    bond_ecalc(&e2,&fb2,db2,kbond2[i]);
-	    log_sum_merge(e1,e2,&et,fb1,fb2,&fb,bet,0);
+	    log_sum_merge(e1,e2,&et,fb1,fb2,&fb,bet);
 	  }
 
 	  fprintf(fp,"%i %lf  %lf %lf %lf  %lf %lf %lf\n",i,bb,e1,e2,et,fb1,fb2,fb);
@@ -413,6 +402,16 @@ double bond(int iflag) {
   }
 
   return 0;
+}
+/****************************************************************************/
+void bend_ecalc_alt(double *e,double *f,double dth,double kth,double th) {
+  double sth = sin(th);
+  double cth = cos(th);
+  
+  (*e) = kth * dth * dth / sth / sth;
+  (*f) = - kth * 2 * dth * (sth - dth * cth) / sth / sth / sth;
+
+  return ;
 }
 /****************************************************************************/
 void bend_ecalc(double *e,double *f,double dth,double kth) {
@@ -437,7 +436,6 @@ double bend(int iflag) {
   if (FF_BEND == 0) return 0;
 
   if (iflag < 0) {
-    bet = 5.0;
     printf("<bend> bet %lf\n",bet);
     return 0;
   }
@@ -453,14 +451,20 @@ double bend(int iflag) {
 	if (FF_BEND == 2  && kbend2[j] != 0) {
 	  dth2 = th[j]-thn2[j];
 	  bend_ecalc(&e2,&fben2,dth2,kbend2[j]);
-	  log_sum_merge(e1=et,e2,&et,fben1=fben,fben2,&fben,bet,0);
+	  log_sum_merge(e1=et,e2,&et,fben1=fben,fben2,&fben,bet);
 	}
 	
 	e += et;
 	
-	cth=max(cos(th[j]),-cthmin);
-	sth=max(sin(th[j]),sthmin);
-	if (sin(th[j])<sthmin) therr++;
+	//	cth = max(cos(th[j]),-cthmin);
+	//	sth = max(sin(th[j]),sthmin);
+	cth = cos(th[j]);
+	sth = sin(th[j]);
+	if (sin(th[j]) < sthmin) {
+	  fprintf(fp_log,"bend : j %i th %lf thn %lf %lf\n",j,th[j]*180./pi,thn[j]*180/pi,thn2[j]*180/pi);
+	  fflush(fp_log);
+	  therr++;
+	}
 	
 	b1x=bx[i];
 	b1y=by[i];
@@ -510,7 +514,7 @@ double bend(int iflag) {
 	  if (FF_BEND == 2  && kbend2[j] != 0) {
 	    dth2 = d - thn2[j];
 	    bend_ecalc(&e2,&fben2,dth2,kbend2[j]);
-	    log_sum_merge(e1=et,e2,&et,fben1=fben,fben2,&fben,bet,0);
+	    log_sum_merge(e1=et,e2,&et,fben1=fben,fben2,&fben,bet);
 	  }
 
 	  fprintf(fp,"%i %lf  %lf %lf %lf  %lf %lf %lf\n",j,d*180/pi,e1,e2,et,
@@ -549,7 +553,6 @@ double torsion(int iflag) {
   if (FF_TORS == 0) return 0;
 
   if (iflag < 0) {
-    bet = 5.0;
     printf("<torsion> bet %lf\n",bet);
     return 0;
   }
@@ -570,12 +573,11 @@ double torsion(int iflag) {
 	  dph2 = ph[j] - phn2[j];
 	  if (tor[j]) tors_ecalc(&e1,&fph1,dph,ktor1[j],ktor3[j]);
 	  if (tor2[j]) tors_ecalc(&e2,&fph2,dph2,ktor1_2[j],ktor3_2[j]);
-	  if (tor[j] && tor2[j]) log_sum_merge(e1,e2,&et,fph1,fph2,&fph,bet,0);
+	  if (tor[j] && tor2[j]) log_sum_merge(e1,e2,&et,fph1,fph2,&fph,bet);
 	  else {
 	    et = (tor[j] ? e1 : e2);
 	    fph = (tor[j] ? fph1 : fph2);
 	  }
-	  //	  printf("j=%i e1 %lf e2 %lf et %lf\n",j,e1,e2,et);
 	}
 	
 	e += et;
@@ -643,7 +645,7 @@ double torsion(int iflag) {
 	    dph2 = d - phn2[j];
 	    if (tor[j]) tors_ecalc(&e1,&fph1,dph,ktor1[j],ktor3[j]);
 	    if (tor2[j]) tors_ecalc(&e2,&fph2,dph2,ktor1_2[j],ktor3_2[j]);
-	    if (tor[j] && tor2[j]) log_sum_merge(e1,e2,&et,fph1,fph2,&fph,bet,0);
+	    if (tor[j] && tor2[j]) log_sum_merge(e1,e2,&et,fph1,fph2,&fph,bet);
 	    else {
 	      et = (tor[j] ? e1 : e2);
 	      fph = (tor[j] ? fph1 : fph2);
@@ -817,7 +819,7 @@ double cellcalc(int inc,int nl,short list[])
     i=list[n]; ic=a2c[i];
     for (m=n+1;m<nl;m++) {
       j=list[m];
-      if ( (abs(i-j)<4 && ic == a2c[j]) || cc[i][j] == 1 || cc[j][i] == 1) continue;
+      if ( (abs(i-j) < 4 && ic == a2c[j]) || cc[i][j] == 1 || cc[j][i] == 1) continue;
       rx=x[j]-x[i]; bc(&rx);
       ry=y[j]-y[i]; bc(&ry);
       rz=z[j]-z[i]; bc(&rz);
@@ -846,15 +848,15 @@ double cont_df(double s1, double s2,double d) {
   double df,bet=5.0;
 
   d -= h;
-  cont_ecalc(0,&e1,&f1,s1,kcon,d * d);
-  cont_ecalc(0,&e2,&f2,s2,kcon,d * d);
-  log_sum_merge(e1,e2,&em1,f1,f2,&fm,bet,0);
+  cont_ecalc(&e1,&f1,s1,kcon,d * d);
+  cont_ecalc(&e2,&f2,s2,kcon,d * d);
+  log_sum_merge(e1,e2,&em1,f1,f2,&fm,bet);
 
   d += 2 * h;
 
-  cont_ecalc(0,&e1,&f1,s1,kcon,d * d);
-  cont_ecalc(0,&e2,&f2,s2,kcon,d * d);
-  log_sum_merge(e1,e2,&em2,f1,f2,&fm,bet,0);
+  cont_ecalc(&e1,&f1,s1,kcon,d * d);
+  cont_ecalc(&e2,&f2,s2,kcon,d * d);
+  log_sum_merge(e1,e2,&em2,f1,f2,&fm,bet);
 
   df = (em2 - em1) / (2 * h);
 
@@ -862,13 +864,11 @@ double cont_df(double s1, double s2,double d) {
 }
 
 /****************************************************************************/
-void cont_gcalc(int iflag,double *e, double *f, double r, double r0,
+void cont_gcalc(double *e, double *f, double r, double r0,
 		double kcont,double ksi) {
+  /* Gaussian "potential" V(r) = kcont * exp(-(r-r0)^2 / 2ksi) */
+  /* Returns (*e) = V(r) and (*f) = -V'(r) / r */
   double dr,g;
-
-  if (iflag < 0) {
-    return ;
-  }
 
   dr = r - r0;
   g = exp(- dr * dr / 2 / ksi);
@@ -877,13 +877,10 @@ void cont_gcalc(int iflag,double *e, double *f, double r, double r0,
   (*f) = kcont * dr * g / ksi / r;
 }
 /****************************************************************************/
-void cont_rep_ecalc(int iflag,double *e,double *f,double r2,double sig2,
-		    double kcont) {
+void cont_rep_ecalc(double *e,double *f,double r2,double sig2,double kcont) {
+  /* Weeks-Chandler-Andersen-type repulsion V(r) */
+  /* Returns (*e) = V(r) and (*f) = - V'(r) / r  */ 
   double r4,r6;
-
-  if (iflag < 0) {
-    return ;
-  }
 
   if (r2 >= sig2) {
     (*e) = (*f) = 0;
@@ -900,7 +897,7 @@ void cont_rep_ecalc(int iflag,double *e,double *f,double r2,double sig2,
   return ;
 }
 /****************************************************************************/
-void cont_att_ecalc(int iflag,double kstr,double r,
+void cont_att_ecalc(double kstr,double r,
 		    double *eg,double *eg1,double *eg2,
 		    double *fg,double *fg1,double *fg2,
 		    int im1,int jm1,int im2,int jm2, 
@@ -909,20 +906,16 @@ void cont_att_ecalc(int iflag,double kstr,double r,
 		    double *rg2x,double *rg2y,double *rg2z) {
   double rg1,rg2;
   
-  if (iflag < 0) {
-    return;
-  }
-  
-  cont_gcalc(0,eg,fg,r,dg,kstr,ksi1);
+  cont_gcalc(eg,fg,r,dg,kstr,ksi1);
 	
   if (im1 >= 0 && jm1 >= 0) {
     rg1 = vec2(im1,jm1,rg1x,rg1y,rg1z);
-    cont_gcalc(0,eg1,fg1,sqrt(rg1),dg1,1.0,ksi2);
+    cont_gcalc(eg1,fg1,sqrt(rg1),dg1,1.0,ksi2);
   } else *eg1 = *fg1 = 1.0;
 
   if (im2 >= 0 && jm2 >= 0) {
     rg2 = vec2(im2,jm2,rg2x,rg2y,rg2z);
-    cont_gcalc(0,eg2,fg2,sqrt(rg2),dg2,1.0,ksi2);
+    cont_gcalc(eg2,fg2,sqrt(rg2),dg2,1.0,ksi2);
   } else *eg2 = *fg2 = 1.0;
 
   (*fg1) = - (*eg) * (*fg1) * (*eg2);
@@ -931,13 +924,10 @@ void cont_att_ecalc(int iflag,double kstr,double r,
   (*fg) = - (*fg) * (*eg1) * (*eg2);
 }
 /****************************************************************************/
-void cont_ecalc(int iflag,double *e,double *f,double sig2,double kcont,
-		double r2) {
+void cont_ecalc(double *e,double *f,double sig2,double kcont,double r2) {
+  /* Lennard-Jones-type potential V(r) */
+  /* Returns (*e) = V(r) and (*f) = -V'(r) / r */
   double r4,r6;
-
-  if (iflag < 0) {
-    return ;
-  }
 
   r6 = sig2 / r2; 
   r4 = r6 * r6; 
@@ -959,7 +949,8 @@ double cont(int iflag) {
   static double rcut_mb;
   FILE *fp1;
 
-  if (FF_CONT == 0 || N == 0) return 0;
+  if (FF_CONT == 0 || N == 0)
+    return 0;
   
   if (iflag < 0) {
     rcut_mb = 3 * ksi1;
@@ -969,10 +960,6 @@ double cont(int iflag) {
       printf("<cont> ksi1 %lf ksi2 %lf\n",ksi1,ksi2);
       printf("<cont> cutoff %lf \n",rcut_mb);
     }
-    
-    cont_ecalc(-1,&e,&fr,0,0,0);
-    cont_gcalc(-1,&e,&fr,0,0,0,0);
-    cont_rep_ecalc(-1,&e,&fr,0,0,0);
     
     if (FF_CONT == 2) {
       cont2(-1);
@@ -1002,25 +989,25 @@ double cont(int iflag) {
 
       if (!FF_MULTIBODY) {
 	if ( r2 > 4 * (sig2 = distp2[m]) ) continue;
-	cont_ecalc(0,&er,&fr,sig2,kcon_nat1[m],r2);
+	cont_ecalc(&er,&fr,sig2,kcon_nat1[m],r2);
 	e += er;
-	add_f(i,j,-fr,rx,ry,rz);
+	add_f(i,j,fr,rx,ry,rz);
       }
       
       if (FF_MULTIBODY) {
 	if ( (r = sqrt(r2)) > distp[m] + rcut_mb ) continue;
 	im1 = nni1[m]; jm1 = nnj1[m];
 	im2 = nni2[m]; jm2 = nnj2[m];
-	cont_rep_ecalc(0,&er,&fr,r2,dist_rep1[m],krep);
-	cont_att_ecalc(0,kcon_nat1[m],r,
+	cont_rep_ecalc(&er,&fr,r2,dist_rep1[m],krep);
+	cont_att_ecalc(kcon_nat1[m],r,
 		       &eg,&eg1,&eg2,&fg,&fg1,&fg2,im1,jm1,im2,jm2,
 		       distp[m],distg1[m],distg2[m],
 		       &rg1x,&rg1y,&rg1z,&rg2x,&rg2y,&rg2z);
 	e += er + eg;
 	fr = fr + fg;
-	add_f(i,j,-fr,rx,ry,rz);
-	add_f(im1,jm1,-fg1,rg1x,rg1y,rg1z);
-	add_f(im2,jm2,-fg2,rg2x,rg2y,rg2z);
+	add_f(i,j,fr,rx,ry,rz);
+	add_f(im1,jm1,fg1,rg1x,rg1y,rg1z);
+	add_f(im2,jm2,fg2,rg2x,rg2y,rg2z);
       }
     }
 
@@ -1046,14 +1033,14 @@ double cont(int iflag) {
 
 	if (!FF_MULTIBODY) {
 	  if ( r2 > 4 * (sig2 = distp2[m]) ) continue;
-	  cont_ecalc(0,&er,&fr,sig2,kcon_nat1[m],r2);
+	  cont_ecalc(&er,&fr,sig2,kcon_nat1[m],r2);
 	  fprintf(fp1,"%i %i %i %lf  %lf\n",m,i,j,d,er);
 	}
 
 	if (FF_MULTIBODY) {
 	  if ( (r = sqrt(r2)) > distp[m] + rcut_mb ) continue;
-	  cont_rep_ecalc(0,&er,&fr,r2,dist_rep1[m],krep);
-	  cont_gcalc(0,&eg,&fg,r,distp[m],kcon_nat1[m],ksi1);
+	  cont_rep_ecalc(&er,&fr,r2,dist_rep1[m],krep);
+	  cont_gcalc(&eg,&fg,r,distp[m],kcon_nat1[m],ksi1);
 	  fprintf(fp1,"%i %i %i %lf  %lf %lf %lf \n",m,i,j,d,er-eg,er,eg);
 	} 
 
@@ -1076,9 +1063,13 @@ double cont2(int iflag) {
   double d;
   static double rcut_mb;
   FILE *fp1;
+
+  if (FF_CONT < 2)
+    return 0;
   
   if (iflag < 0) {
     rcut_mb = 3 * ksi1;
+
     if (FF_MULTIBODY == 1)  {
       printf("<cont2> cutoff %lf \n",rcut_mb);
     }
@@ -1105,8 +1096,8 @@ double cont2(int iflag) {
 
       if (!FF_MULTIBODY) {
 	if ( r2 > 4 * (sig2 = distp4[m]) ) continue;
-	cont_ecalc(0,&er,&fr,sig2,kcon_nat2[m],r2);
-	add_f(i,j,-fr,rx,ry,rz);
+	cont_ecalc(&er,&fr,sig2,kcon_nat2[m],r2);
+	add_f(i,j,fr,rx,ry,rz);
 	e += er;
       }
 
@@ -1114,16 +1105,16 @@ double cont2(int iflag) {
 	if ( (r = sqrt(r2)) > distp3[m] + rcut_mb ) continue;
 	im1 = nni3[m]; jm1 = nnj3[m];
 	im2 = nni4[m]; jm2 = nnj4[m];
-	cont_rep_ecalc(0,&er,&fr,r2,dist_rep2[m],krep);
-	cont_att_ecalc(0,kcon_nat2[m],r,
+	cont_rep_ecalc(&er,&fr,r2,dist_rep2[m],krep);
+	cont_att_ecalc(kcon_nat2[m],r,
 		       &eg,&eg1,&eg2,&fg,&fg1,&fg2,im1,jm1,im2,jm2,
 		       distp3[m],distg3[m],distg4[m],
 		       &rg1x,&rg1y,&rg1z,&rg2x,&rg2y,&rg2z);
 	e += er + eg;
 	fr = fr + fg;
-	add_f(i,j,-fr,rx,ry,rz);
-	add_f(im1,jm1,-fg1,rg1x,rg1y,rg1z);
-	add_f(im2,jm2,-fg2,rg2x,rg2y,rg2z);
+	add_f(i,j,fr,rx,ry,rz);
+	add_f(im1,jm1,fg1,rg1x,rg1y,rg1z);
+	add_f(im2,jm2,fg2,rg2x,rg2y,rg2z);
       }
     }
 
@@ -1142,14 +1133,14 @@ double cont2(int iflag) {
 	
 	if (!FF_MULTIBODY) {
 	  if ( r2 > 4 * (sig2 = distp4[m]) ) continue;
-	  cont_ecalc(0,&er,&fr,sig2,kcon_nat2[m],r2);
+	  cont_ecalc(&er,&fr,sig2,kcon_nat2[m],r2);
 	  fprintf(fp1,"%i %i %i %lf  %lf\n",m,i,j,d,er);
 	}
 
 	if (FF_MULTIBODY) {
 	  if ( (r = sqrt(r2)) > distp3[m] + rcut_mb ) continue;
-	  cont_rep_ecalc(0,&er,&fr,r2,dist_rep2[m],krep);
-	  cont_gcalc(0,&eg,&fg,sqrt(r2),distp3[m],kcon_nat2[m],ksi1);
+	  cont_rep_ecalc(&er,&fr,r2,dist_rep2[m],krep);
+	  cont_gcalc(&eg,&fg,sqrt(r2),distp3[m],kcon_nat2[m],ksi1);
 	  fprintf(fp1,"%i %i %i %lf  %lf %lf %lf \n",m,i,j,d,er-eg,er,eg);
 	} 
       }
@@ -1180,8 +1171,11 @@ double cont_corr(int iflag) {
   double rg1xB,rg1yB,rg1zB,eg1B,fg1B;
   double rg2xB,rg2yB,rg2zB,eg2B,fg2B;
 
+  if (FF_CONT < 2)
+    return 0;
+  
   if (!FF_MULTIBODY) {
-    printf("    cont_corr() not implemented for the case FF_MULTIBODY %i\nExiting...\n",FF_MULTIBODY);
+    printf("    cont_corr() only implemented for the case FF_MULTIBODY %i\nExiting...\n",FF_MULTIBODY);
     exit(-1);
   }
 
@@ -1216,6 +1210,7 @@ double cont_corr(int iflag) {
   }
 
   if (iflag == 0) {
+
     for (s = 0; s < spair; ++s) {
       m = mc1[s];
       n = mc2[s];
@@ -1233,14 +1228,14 @@ double cont_corr(int iflag) {
 	im1B = nni3[n]; jm1B = nnj3[n];
 	im2B = nni4[n]; jm2B = nnj4[n];
 
-	cont_rep_ecalc(0,&er,&fr,r2,dist_rep1[m],krep);
+	cont_rep_ecalc(&er,&fr,r2,dist_rep1[m],krep);
 
-	cont_att_ecalc(0,kcon_nat1[m],r,
+	cont_att_ecalc(kcon_nat1[m],r,
 		       &egA,&eg1A,&eg2A,&fgA,&fg1A,&fg2A,im1A,jm1A,im2A,jm2A,
 		       distp[m],distg1[m],distg2[m],
 		       &rg1xA,&rg1yA,&rg1zA,&rg2xA,&rg2yA,&rg2zA);
 	
-	cont_att_ecalc(0,kcon_nat2[n],r,
+	cont_att_ecalc(kcon_nat2[n],r,
 		       &egB,&eg1B,&eg2B,&fgB,&fg1B,&fg2B,im1B,jm1B,im2B,jm2B,
 		       distp3[n],distg3[n],distg4[n],
 		       &rg1xB,&rg1yB,&rg1zB,&rg2xB,&rg2yB,&rg2zB);
@@ -1248,15 +1243,15 @@ double cont_corr(int iflag) {
 	if (egA < egB) {
 	  e += er + egA;
 	  fr = fr + fgA;
-	  add_f(i,j,-fr,rx,ry,rz);
-	  add_f(im1A,jm1A,-fg1A,rg1xA,rg1yA,rg1zA);
-	  add_f(im2A,jm2A,-fg2A,rg2xA,rg2yA,rg2zA);
+	  add_f(i,j,fr,rx,ry,rz);
+	  add_f(im1A,jm1A,fg1A,rg1xA,rg1yA,rg1zA);
+	  add_f(im2A,jm2A,fg2A,rg2xA,rg2yA,rg2zA);
 	} else {
 	  e += er + egB;
 	  fr = fr + fgB;
-	  add_f(i,j,-fr,rx,ry,rz);
-	  add_f(im1B,jm1B,-fg1B,rg1xB,rg1yB,rg1zB);
-	  add_f(im2B,jm2B,-fg2B,rg2xB,rg2yB,rg2zB);
+	  add_f(i,j,fr,rx,ry,rz);
+	  add_f(im1B,jm1B,fg1B,rg1xB,rg1yB,rg1zB);
+	  add_f(im2B,jm2B,fg2B,rg2xB,rg2yB,rg2zB);
 	} 
       }
     }

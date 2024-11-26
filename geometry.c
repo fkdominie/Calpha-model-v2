@@ -208,7 +208,7 @@ void dof2cart(int iflag) {
   }
 }
 /****************************************************************************/
-int cart2dof(int err) {
+int cart2dof(void) {
   int i,j,k,ok=1;
   double b1x,b1y,b1z,b1;
   double b2x,b2y,b2z;
@@ -230,8 +230,7 @@ int cart2dof(int err) {
       bz[i]=b1z/b1;
       b[i]=b1;
       
-     // if (b1>5.0 || b1<2.0) {ok=0; printf("cart2dof 1: %i b1 %f\n",i,b1);}
-      if (err && (b1>5.0 || b1<2.0)) {ok=0; printf("b1 %f %d \n",b1, i);}
+      if (b1>5.0 || b1<2.0) {ok=0; fprintf(fp_log,"cart2dof bond: i %i %lf\n",i,b1);}
     }    
   }
 
@@ -248,11 +247,9 @@ int cart2dof(int err) {
       b2z=bz[i];
     
       tmp1 = b1x*b2x + b1y*b2y + b1z*b2z;
-      // if (tmp1 < -1.0) {tmp1 = -1.0; ok=0; printf("cart2dof 2: tmp1 %f\n",tmp1);}
-      // if (tmp1 >  1.0) {tmp1 =  1.0; ok=0; printf("cart2dof 3: tmp1 %f\n",tmp1);}
       
-      if (tmp1 < -1.0) {tmp1 = -1.0; ok=0;}
-      if (tmp1 >  1.0) {tmp1 =  1.0; ok=0; }
+      if (tmp1 < -1.0) {tmp1 = -1.0; ok=0; fprintf(fp_log,"cart2dof bend: i %i  tmp1 %f\n",i, tmp1); }
+      if (tmp1 >  1.0) {tmp1 =  1.0; ok=0; fprintf(fp_log,"cart2dof bend: i %i  tmp1 %f\n",i, tmp1); }
       th[i] = pi - acos(tmp1);
       
       ux=b1y*b2z-b1z*b2y;
@@ -273,10 +270,8 @@ int cart2dof(int err) {
       j=i+1;
       
       tmp1 = sx[i]*sx[j] + sy[i]*sy[j] + sz[i]*sz[j];
-      if (tmp1 < -1.0) {tmp1 = -1.0; ok=0;}
-      if (tmp1 >  1.0) {tmp1 =  1.0; ok=0;}
-      // if (tmp1 < -1.0) {tmp1 = -1.0; ok=0; printf("cart2dof 5: tmp1 %f\n",tmp1);}
-      // if (tmp1 >  1.0) {tmp1 =  1.0; ok=0; printf("cart2dof 6: tmp1 %f\n",tmp1);}
+      if (tmp1 < -1.0) {tmp1 = -1.0; ok=0; fprintf(fp_log,"cart2dof tors: i %i  tmp1 %f\n",i, tmp1); }
+      if (tmp1 >  1.0) {tmp1 =  1.0; ok=0; fprintf(fp_log,"cart2dof tors: i %i  tmp1 %f\n",i, tmp1); }
       
       if ((sx[i]*bx[j]+sy[i]*by[j]+sz[i]*bz[j])>0.0)
 	ph[i]=acos(tmp1);

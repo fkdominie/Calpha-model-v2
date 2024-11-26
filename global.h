@@ -123,6 +123,7 @@ extern int carterr,therr;
 extern long seed,orig_seed;
 extern char OUTDIR[];
 extern int FANALYS;
+extern FILE *fp_log;
 /****************************************************************************/
 /* misc.c */
 void printinfo(void);
@@ -140,13 +141,16 @@ int read_momenta(char *fn,char *fdir);
 int read_forces(char *fname,char *fdir);
 int read_data(char *fname,char *fdir,long *imd,long *seed,long *orig);
 int read_checkpnt(void);
-void check_cmaps(void);
+void correct_natdist(int *ip1,int *ip2,int n,double *dist2,double dist_rep[],
+		     int *dual,double *xn,double *yn,double *zn);
 void write_shared_dist(char *fn,int *mc1,int *mc2,int spair);
-int get_shared_contacts(int *mc1,int *mc2,int *dual1,int *dual);
-void get_natdist(double *dist,double *dist2,double *distg1,double *distg2,
-		 double *dist_rep,int n,
-		 int *ip1,int *ip2,int *nni1,int *nnj1,int *nni2,int *nnj2,
+int get_shared_contacts(int *mc1,int *mc2,int *dual1,int *dual2);
+void get_natdist(double *dist,double *dist2,int *ip1,int *ip2,int n,
 		 double *xn,double *yn,double *zn);
+void get_nndist(double *distg1,double *distg2,
+		int *ip1,int *ip2,int n,
+		int *nni1,int *nnj1,int *nni2,int *nnj2,
+		double *xn,double *yn,double *zn);
 void write_natdist(char *fn,double *dist,int n,int *ip1,int *ip2);
 void set_bonded_strength(double *kbond,double *kbend,double *ktor1,double *ktor3,
 			 int *nat);
@@ -207,7 +211,7 @@ void ch2box(int ich);
 void cr2box(int icr);
 //void ch2boxcr(int icr);
 void dof2cart(int iflag);
-int cart2dof(int err);
+int cart2dof(void);
 /* utils.c */
 int read_native(char *fn,double *xr,double *yr,double *zr,int *nat);
 int read_native2(char *fn, double *xr, double *yr, double *zr, int a1, int a2);

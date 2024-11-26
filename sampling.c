@@ -64,7 +64,7 @@ void mdstep(void) {
     zcr[i]=zcr[i]+dt*vzc[i]+c1cr*(fzc[i]-mcr*gamcr*vzc[i]+frcdz[i]);
   }
   
-  if (1!=cart2dof(1)) carterr++;
+  if (1!=cart2dof()) carterr++;
 
   for (i=0;i<N;i++) {
     frdxo[i]=frdx[i];

@@ -14,7 +14,8 @@ double pi,pi2,pid2;                /* pi,2*pi,pi/2                          */
 long seed=-11;                     /* random number seed                    */
 long orig_seed;                    /* original seed                         */
 char OUTDIR[100];                  /* output directory                      */
-int FANALYS = 0;                   /* flag for analysis (post processing)   */ 
+int FANALYS = 0;                   /* flag for analysis (post processing)   */
+FILE *fp_log;
 /****************************************************************************/
 void read_cont_param(char fn[],int ip1[],int ip2[],int npair,double kcont[]);
 void read_bonded_param(char fn[],double v1[],double k1[],double v2[],double k2[],
@@ -161,7 +162,7 @@ int read_checkpnt(void) {
   orig_seed = orig;
   while (orig < seed) ran3n(&orig);
 
-  cart2dof(0);
+  cart2dof();
 
   for (i = 0; i < NCR; i++)
     fxc[i] = fyc[i] = fzc[i] = 0;
@@ -196,7 +197,7 @@ int read_checkpnt(void) {
 void write_checkpnt(void) {
   int i;
   
-  cart2dof(0);
+  cart2dof();
 
   for (i = 0; i < N; i++)
     fx[i] = fy[i] = fz[i] = 0;
@@ -235,11 +236,11 @@ int read_data(char *fname,char *fdir,long *imd0,long *seed,long *orig) {
     return 1;
   }
   printf("<checkpnt> Found file %s \n",str);
-  fscanf(fp,"imd %li\n",imd0);
-  fscanf(fp,"seed %li\n",seed);
-  fscanf(fp,"orig %li\n",orig);
-  fscanf(fp,"N %i\n",&n);
-  fscanf(fp,"NCR %i\n",&ncr);
+  if (1 == fscanf(fp,"imd %li\n",imd0)) printf("<checkpnt> imd %li\n",*imd0);
+  if (1 == fscanf(fp,"seed %li\n",seed)) printf("<checkpnt> seed %li\n",*seed); 
+  if (1 == fscanf(fp,"orig %li\n",orig)) printf("<checkpnt> orig %li\n",*orig);
+  if (1 == fscanf(fp,"N %i\n",&n)) printf("<checkpnt> N %i\n",n);
+  if (1 == fscanf(fp,"NCR %i\n",&ncr)) printf("<checkpnt> NCR %i\n",ncr);
   fclose(fp);
 
   if (n != N || ncr != NCR) {
@@ -254,7 +255,7 @@ int read_data(char *fname,char *fdir,long *imd0,long *seed,long *orig) {
 void write_data(char *fname,char *fdir,long imd,long seed,long orig) {
   FILE *fp;
   char str[100];
-
+  
   strcpy(str,fdir);
   strcat(str,fname);
 
@@ -270,19 +271,23 @@ void write_data(char *fname,char *fdir,long imd,long seed,long orig) {
 int read_forces(char *fname,char *fdir) {
   FILE *fp;
   char str[100];
+  int n=0;
 
   strcpy(str,fdir);
   strcat(str,fname);
 
   if ( (fp = fopen(str,"r")) == NULL) return 1;
-  fread(frdx,sizeof(double),N,fp);
-  fread(frdy,sizeof(double),N,fp);
-  fread(frdz,sizeof(double),N,fp);
-  fread(frcdx,sizeof(double),NCR,fp);
-  fread(frcdy,sizeof(double),NCR,fp);
-  fread(frcdz,sizeof(double),NCR,fp);
+  n+=fread(frdx,sizeof(double),N,fp);
+  n+=fread(frdy,sizeof(double),N,fp);
+  n+=fread(frdz,sizeof(double),N,fp);
+  n+=fread(frcdx,sizeof(double),NCR,fp);
+  n+=fread(frcdy,sizeof(double),NCR,fp);
+  n+=fread(frcdz,sizeof(double),NCR,fp);
   fclose(fp);
 
+  if (n != 3*N + 3*NCR)
+    printf("Error reading forces\n");
+  
   return 0;
 } 
 /****************************************************************************/
@@ -306,18 +311,22 @@ void write_forces(char *fn,char *fdir,char *fmode) {
 int read_momenta(char *fname,char *fdir) {
   FILE *fp;
   char str[100];
+  int n=0;
 
   strcpy(str,fdir);
   strcat(str,fname);
 
   if ( (fp = fopen(str,"r")) == NULL) return 1;
-  fread(vx,sizeof(double),N,fp);
-  fread(vy,sizeof(double),N,fp);
-  fread(vz,sizeof(double),N,fp);
-  fread(vxc,sizeof(double),NCR,fp);
-  fread(vyc,sizeof(double),NCR,fp);
-  fread(vzc,sizeof(double),NCR,fp);
+  n+=fread(vx,sizeof(double),N,fp);
+  n+=fread(vy,sizeof(double),N,fp);
+  n+=fread(vz,sizeof(double),N,fp);
+  n+=fread(vxc,sizeof(double),NCR,fp);
+  n+=fread(vyc,sizeof(double),NCR,fp);
+  n+=fread(vzc,sizeof(double),NCR,fp);
   fclose(fp);
+
+  if (n != 3*N + 3*NCR)
+    printf("Error reading momenta\n");
 
   return 0;
 } 
@@ -361,7 +370,7 @@ void write_conf(char *fn,char *dir,char *fmode) {
 int read_conf(int iflag,char *fn,char *fdir) {
   static FILE *fp = NULL;
   static char fcur[200],fname[200];
-
+  
   if (iflag < 0) {
     strcpy(fcur,"");
     strcpy(fname,"");
@@ -383,86 +392,93 @@ int read_conf(int iflag,char *fn,char *fdir) {
   }
   
   if (1 != fread(&ind,sizeof(int),1,fp)) return 1; 
-  fread(&Epot,sizeof(double),1,fp);
-  fread(x,sizeof(double),N,fp);
-  fread(y,sizeof(double),N,fp);
-  fread(z,sizeof(double),N,fp);
-  fread(xcr,sizeof(double),NCR,fp);
-  fread(ycr,sizeof(double),NCR,fp);
-  fread(zcr,sizeof(double),NCR,fp);
+  if (1 != fread(&Epot,sizeof(double),1,fp)) return 1;
+  if (N != fread(x,sizeof(double),N,fp)) return 1;
+  if (N != fread(y,sizeof(double),N,fp)) return 1;
+  if (N != fread(z,sizeof(double),N,fp)) return 1;
+  if (NCR != fread(xcr,sizeof(double),NCR,fp)) return 1;
+  if (NCR != fread(ycr,sizeof(double),NCR,fp)) return 1;
+  if (NCR != fread(zcr,sizeof(double),NCR,fp)) return 1;
 
   return 0;
 } 
 /****************************************************************************/
-void check_cmaps(void) {
-  int i,j,m,n;
+void correct_natdist(int *ip1,int *ip2,int n,double *dist2,double dist_rep[],
+		      int *dual,double *xn,double *yn,double *zn) {
+  /* Look for native contacts in one (native) structure for which the distance
+     between the beads is smaller in an alternate structure. Reduce repulsive
+     range to avoid steric clashes. */
+  int i,j,m;
   double r2;  
-  int clash = 0;
 
-  if(FF_CONT < 2) return;
-
-  for (m = 0; m < npair; m++) {
-    i = ip1[m]; j = ip2[m]; 
-    r2 = ((xnat2[i]-xnat2[j]) * (xnat2[i]-xnat2[j])+
-	  (ynat2[i]-ynat2[j]) * (ynat2[i]-ynat2[j])+ 
-	  (znat2[i]-znat2[j]) * (znat2[i]-znat2[j]));
-    if (nat2[i] && nat2[j] && r2 < distp2[m]) {
-      dist_rep1[m] = r2;
-      printf("<check_cmaps1> %s contact %i %i (%lf > %lf). Setting repulsive distance to %lf\n",
-	     dual1[m] > 0 ? "Dual" : "Native",
-	     i,j,distp[m],sqrt(r2),sqrt(dist_rep1[m]));
-    }
-  }
-
-  for (n = 0; n < npair2; n++) {
-    i = ip3[n]; j = ip4[n]; 
-    r2 = ((xnat[i]-xnat[j]) * (xnat[i]-xnat[j])+
-	  (ynat[i]-ynat[j]) * (ynat[i]-ynat[j])+ 
-	  (znat[i]-znat[j]) * (znat[i]-znat[j]));
-    if (nat[i] && nat[j] && r2 < distp4[n]) {
-      dist_rep2[n] = r2;
-      printf("<check_cmaps2> %s contact %i %i (%lf > %lf). Setting repulsive distance to %lf\n",
-	     dual2[n] > 0 ? "Dual" : "Native",
-	     i,j,distp3[n],sqrt(r2),sqrt(dist_rep2[n]));
-    }
-  }
-
-  if (clash == 1) {
-    printf("Fix clash problem!! Exiting... \n");
-    exit(-1);
-  }
+  if (FF_CONT < 2)
+    return ;
   
-  return;
+  for (m = 0; m < n; m++) {
+    i = ip1[m]; j = ip2[m];
+    r2 = ( (xn[i] - xn[j]) * (xn[i] - xn[j]) +
+	   (yn[i] - yn[j]) * (yn[i] - yn[j]) + 
+	   (zn[i] - zn[j]) * (zn[i] - zn[j]));
+    if (r2 > dist2[m]) continue;
+    dist_rep[m] = r2;
+    fprintf(fp_log,"<correct_natdist> %s cont %3i %3i (%3.5lf < %3.5lf). Setting repulsive distance to %lf\n",
+	    dual[m] > 0 ? "Dual  " : "Native",i,j,sqrt(r2),sqrt(dist2[m]),sqrt(dist_rep[m]));
+  }
+
+  return ;
 }
 /****************************************************************************/
 int get_shared_contacts(int *mc1,int *mc2,int *dual1,int *dual2)
 {
   int i,j,m,n,s;
 
-  if (FF_CONT < 2) return 0; 
+  if (FF_CONT < 2)
+    return 0; 
 
   for (m = s = 0; m < npair; m++) {
     i = ip1[m]; j = ip2[m];
+
     for (n = 0; n < npair2; n++) {
       if ( (i == ip3[n] && j == ip4[n]) ||
 	   (j == ip3[n] && i == ip4[n]) ) {
 	mc1[s] = m;
 	mc2[s++] = n;
-	dual1[m] = (distp[m] < distp3[n] ? 1 : 2);
-	dual2[n] = (distp3[n] < distp[m] ? 1 : 2);
+	dual1[m] = 1;
+	dual2[n] = 1;
       }
     }
+
   }
 
   return s;
 }
 /****************************************************************************/
-void get_natdist(double *dist,double *dist2,double *distg1,double *distg2,
-		 double *dist_rep,int n,
-		 int *ip1,int *ip2,int *nni1,int *nnj1,int *nni2,int *nnj2,
+void get_natdist(double *dist,double *dist2,int *ip1,int *ip2,int n,
 		 double *xn,double *yn,double *zn) {
-  int i,j,i1,j1,m,q,imin=0,jmin=0;
-  double r2,r2min = 0,r2max = 0;
+  int i,j,m;
+  double r2,r2min = 1e6,r2max = 0;
+
+  for (m = 0; m < n; m++) {
+    i = ip1[m]; j = ip2[m]; 
+    r2 = ((xn[i]-xn[j]) * (xn[i]-xn[j])+
+	  (yn[i]-yn[j]) * (yn[i]-yn[j])+ 
+	  (zn[i]-zn[j]) * (zn[i]-zn[j]));
+    if (r2 < r2min) r2min = r2; 
+    if (r2 > r2max) r2max = r2; 
+    dist[m] = sqrt(r2);
+    dist2[m] = r2;
+  }
+  
+  if (n > 0)
+    printf("<get_natdist> rmin %f rmax %f\n",sqrt(r2min),sqrt(r2max));
+
+  return ;
+}
+/****************************************************************************/
+void get_nndist(double *distg1,double *distg2,int *ip1,int *ip2,int n,
+		int *nni1,int *nnj1,int *nni2,int *nnj2,
+		double *xn,double *yn,double *zn) {
+  int i,j,ic,jc,i1,j1,m,q,imin=0,jmin=0;
   double gmin,dg[4];  
 
   gmin = dg[0] = dg[1] = dg[2] = dg[3] = 0;
@@ -471,26 +487,23 @@ void get_natdist(double *dist,double *dist2,double *distg1,double *distg2,
   
   for (m = 0; m < n; m++) {
     i = ip1[m]; j = ip2[m]; 
-    r2 = ((xn[i]-xn[j]) * (xn[i]-xn[j])+
-	  (yn[i]-yn[j]) * (yn[i]-yn[j])+ 
-	  (zn[i]-zn[j]) * (zn[i]-zn[j]));
-    if (r2 < r2min || m == 0) r2min = r2; 
-    if (r2 > r2max || m == 0) r2max = r2; 
-    dist[m] = sqrt(r2);
-    dist2[m] = dist_rep[m] = r2;
-    cc[i][j] = cc[j][i] = 1;
-
+    ic = a2c[i]; jc = a2c[j];
+    
     q = 0;
     gmin = 1e6;
-    for (i1=i-1; i1<=i+1; i1+=2) {
-      for (j1=j-1; j1<=j+1; j1+=2) {
-	if (i1 < 0 || i1 > N-1 || j1 < 0 || j1 > N-1) continue;
+    for (i1 = i-1; i1 <= i+1; i1 += 2) {
+      for (j1 = j-1; j1 <= j+1; j1 += 2) {
+	
+	if (i1 < iBeg[ic] || i1 > iEnd[ic] || j1 < iBeg[jc] || j1 > iEnd[jc]) continue;
+
 	dg[q] =  sqrt( (xn[i1]-xn[j1]) * (xn[i1]-xn[j1]) +
 		       (yn[i1]-yn[j1]) * (yn[i1]-yn[j1]) + 
 		       (zn[i1]-zn[j1]) * (zn[i1]-zn[j1]) );
+
 	if (dg[q] < gmin) {
 	  imin = i1; jmin = j1; gmin = dg[q];
 	}
+	
 	q++;
       }
     }
@@ -507,9 +520,15 @@ void get_natdist(double *dist,double *dist2,double *distg1,double *distg2,
       nni1[m] = imin; nnj1[m] = jmin; distg1[m] = gmin;
     }
   }
-  
-  if (n > 0)
-    printf("rmin %f rmax %f\n",sqrt(r2min),sqrt(r2max));
+
+  /*  for (m = 0; m < n; m++) {
+    i = ip1[m]; j = ip2[m]; 
+
+    printf("%i %i %i (%i,%i,%lf) (%i,%i,%lf)\n",m,i,j,
+	   nni1[m],nnj1[m],distg1[m],nni2[m],nnj2[m],distg2[m]); 
+	   } */
+
+  return ;
 }
 /****************************************************************************/
 void write_shared_dist(char *fn,int *mc1,int *mc2,int spair) {
@@ -605,7 +624,7 @@ void get_bonded_param(double *bn,double *thn,double *phn,
     z[i] = znat[i];
   }
 
-  if (1 != cart2dof(0)) printf("<get_bonded_param> Error native configuration\n");
+  if (1 != cart2dof()) printf("<get_bonded_param> Error native configuration\n");
 
   for (i = 0; i < N-1; i++) {
     j = i + 1;
@@ -803,7 +822,7 @@ void read_bonded_param(char fn[],
 /***** INITIALIZATION *******************************************************/
 /****************************************************************************/
 void init(int iflag) {
-  int i,j,k,m,nnat1,nnat2;
+  int i,j,k,m,nnat1,nnat2,n;
   double vxsum,vysum,vzsum,vxcsum,vycsum,vzcsum;
   double c0,c0cr;
   double o[NOBS];
@@ -835,7 +854,8 @@ void init(int iflag) {
       printf("<init> No file %s\n",INPUTG);
       for (i=0; i<NTMP; i++) g[i] = 0.0;
     } else {
-      for (i=0; i<NTMP; i++) fscanf(fp1,"%i %lf", &i, &g[i]);
+      for (i=n=0; i<NTMP; i++) n += fscanf(fp1,"%i %lf", &i, &g[i]);
+      printf("<init> %i lines read in %s\n",n/2,INPUTG);
       fclose(fp1);
     }
   }
@@ -848,7 +868,7 @@ void init(int iflag) {
 
   if (ISEED == 1){
     FILE *devrandom = fopen("/dev/urandom", "r");
-    fread(&seed, sizeof(seed), 1, devrandom);
+    n=fread(&seed, sizeof(seed), 1, devrandom);
     seed=-labs(seed%100000000);
     fclose(devrandom);
   } 
@@ -885,6 +905,7 @@ void init(int iflag) {
   printf("<init> Creating directory %s\n",CHECKDIR);
   mkdir(CHECKDIR, 0777);
 
+  fp_log = fopen(LOGFILE,"a");
 
   /* constants */
   
@@ -963,10 +984,8 @@ void init(int iflag) {
   else
     printf("<init> NATIVE2: No data (%s)\n",NATIVE2);
 
-  /* contact maps */
-  double dtmp[MAXP];
-  int ntmp[MAXP];
-  
+  /* contact observables */
+
   npair = npair2 = spair = 0;
   npair3 = npair4 = npair5 = 0;
   for (m = 0; m < MAXP; m++)
@@ -978,8 +997,7 @@ void init(int iflag) {
   if (npair > 0) {
     printf("<init> CONTMAP: Read %i contacts (%s)\n",npair, CONTMAP);
     printf("<init> CONTMAP: ");
-    get_natdist(distp,distp2,distg1,distg2,dist_rep1,npair,ip1,ip2,
-		nni1,nnj1,nni2,nnj2,xnat,ynat,znat);
+    get_natdist(distp,distp2,ip1,ip2,npair,xnat,ynat,znat);
     printf("<init> CONTMAP: Writing to %s\n","cmap.out");
     write_natdist("cmap.out",distp,npair,ip1,ip2);
   } else printf("<init> CONTMAP: No data (%s)\n",CONTMAP);
@@ -988,8 +1006,7 @@ void init(int iflag) {
   if (npair2 > 0) {
     printf("<init> CONTMAP2: Read %i contacts  (%s)\n",npair2, CONTMAP2);
     printf("<init> CONTMAP2: ");
-    get_natdist(distp3,distp4,distg3,distg4,dist_rep2,npair2,ip3,ip4,
-		nni3,nnj3,nni4,nnj4,xnat2,ynat2,znat2);
+    get_natdist(distp3,distp4,ip3,ip4,npair2,xnat2,ynat2,znat2);
     printf("<init> CONTMAP2: Writing to %s\n","cmap2.out");
     write_natdist("cmap2.out",distp3,npair2,ip3,ip4);
   } else printf("<init> CONTMAP2: No data (%s)\n",CONTMAP2);
@@ -998,8 +1015,7 @@ void init(int iflag) {
   if (npair3 > 0) {
     printf("<init> CONTMAP3: Read %i contacts (%s)\n",npair3, CONTMAP3);
     printf("<init> CONTMAP3: ");
-    get_natdist(distp5,distp6,dtmp,dtmp,dtmp,npair3,ip5,ip6,
-		ntmp,ntmp,ntmp,ntmp,xnat,ynat,znat);
+    get_natdist(distp5,distp6,ip5,ip6,npair3,xnat,ynat,znat);
     printf("<init> CONTMAP3: Writing to %s\n","cmap3.out");
     write_natdist("cmap3.out",distp5,npair3,ip5,ip6);
   } else printf("<init> CONTMAP3:  No data (%s)\n",CONTMAP3);
@@ -1008,8 +1024,7 @@ void init(int iflag) {
   if (npair4 > 0) {
     printf("<init> CONTMAP4: Read %i contacts  (%s)\n",npair4, CONTMAP4);
     printf("<init> CONTMAP4: ");
-    get_natdist(distp7,distp8,dtmp,dtmp,dtmp,npair4,ip7,ip8,
-		ntmp,ntmp,ntmp,ntmp,xnat,ynat,znat);
+    get_natdist(distp7,distp8,ip7,ip8,npair4,xnat,ynat,znat);
     printf("<init> CONTMAP4: Writing to %s\n","cmap4.out");
     write_natdist("cmap4.out",distp7,npair4,ip7,ip8);
   } else printf("<init> CONTMAP4: No data (%s)\n",CONTMAP4);
@@ -1019,13 +1034,30 @@ void init(int iflag) {
   if (npair3 > MAXP) {printf("npair3 too big\n"); exit(-1);}
   if (npair4 > MAXP) {printf("npair4 too big\n"); exit(-1);}
 
-  for (m = 0; m < npair; m++) kcon_nat1[m] = kcon;
-  for (m = 0; m < npair2; m++) kcon_nat2[m] = kcon;
+  /* contact interactions */
 
-  if (FF_CONT > 1) {
+  if (FF_CONT > 0) {
+    for (m = 0; m < npair; m++) kcon_nat1[m] = kcon;
+    get_nndist(distg1,distg2,ip1,ip2,npair,nni1,nnj1,nni2,nnj2,xnat,ynat,znat);
+    for (m = 0; m < npair; m++) {
+      i = ip1[m]; j = ip2[m];
+      cc[i][j] = cc[j][i] = 1;
+      dist_rep1[m] = distp2[m];
+    }
+  }
+  
+  if (FF_CONT == 2) {
+    for (m = 0; m < npair2; m++) kcon_nat2[m] = kcon;
+    get_nndist(distg3,distg4,ip3,ip4,npair2,nni3,nnj3,nni4,nnj4,xnat2,ynat2,znat2);
+    for (m = 0; m < npair2; m++) {
+      i = ip3[m]; j = ip4[m];
+      cc[i][j] = cc[j][i] = 1;
+      dist_rep2[m] = distp4[m];
+    }
     spair = get_shared_contacts(mc1,mc2,dual1,dual2);
     write_shared_dist("cmap_corr.out",mc1,mc2,spair);
-    check_cmaps();
+    correct_natdist(ip1,ip2,npair,distp2,dist_rep1,dual1,xnat2,ynat2,znat2);
+    correct_natdist(ip3,ip4,npair2,distp4,dist_rep2,dual2,xnat,ynat,znat);
   }
 
   /* contact parameters from file */  
@@ -1080,7 +1112,7 @@ void init(int iflag) {
 
   /* initial chain configuration  */  
 
-  if (ISTART == 0) {            /* native */
+  if (ISTART == 0) {  /* native */
     printf("<init> Initializing chain(s) from NATIVE %s\n",NATIVE);
     for (i = 0; i < N; i++) {
       x[i] = xnat[i];
@@ -1088,7 +1120,7 @@ void init(int iflag) {
       z[i] = znat[i];
       //      printf("%lf %lf %lf \n",x[i],y[i],z[i]);
     }
-    if (1 != cart2dof(0)) printf("Error initial configuration");
+    if (1 != cart2dof()) printf("Error initial configuration");
   } else if (ISTART == 1) {     /* read */
     printf("<init> Initializing chain(s) from START %s\n",START);
     fp1 = fopen(START,"r");
@@ -1097,7 +1129,7 @@ void init(int iflag) {
 	break;
     }
     fclose(fp1);
-    if (1 != cart2dof(0)) printf("Error initial configuration");
+    if (1 != cart2dof()) printf("Error initial configuration");
   } else if (ISTART == 2) {     /* random */
     printf("<init> Initializing chain(s) from random configuration\n");
     for (i = 0; i < N-1; i++) b[i]  =  bn[i] ;
@@ -1158,7 +1190,6 @@ void init(int iflag) {
     Ekin+=vxc[i]*vxc[i]+vyc[i]*vyc[i]+vzc[i]*vzc[i];
   }
   Ekin*=0.5;
-
   
   /* initial energies and forces */
   
@@ -1191,7 +1222,6 @@ void init(int iflag) {
 	 Ebon,Eben,Erep,Etor,Econ,Econ1,Econ2,Ecorr);
   printf("  Ehp %f Ecc %f Ecb %f\n",Ehp, Ecc, Ecb);
 
-  
   /* print energy functions */
   
   bond(1);
