@@ -263,6 +263,8 @@ void dumppdb(char *fn,double x[],double y[],double z[],int seq[],int n) {
 
   fp=fopen(fn,"w");
 
+  fprintf(fp,"REMARK\n");
+  
   for (i=0;i<n;i++) {
     iaa=get_iaa(seq[i]);
     for (j=0;j<natom[iaa];j++) {
@@ -272,6 +274,7 @@ void dumppdb(char *fn,double x[],double y[],double z[],int seq[],int n) {
     }
   }
 
+  fprintf(fp,"END\n");
   fclose(fp);
 }
 /****************************************************************************/
