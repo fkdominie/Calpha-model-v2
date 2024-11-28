@@ -97,9 +97,9 @@ int main(int argc,char *argv[]) {
 # include <stdlib.h>
 # include <string.h>
 # define NMAX 200 
-# define S1 " N  "," CA "," C  "
-# define S2 " N  "," CA "," C  "," CB "
-# define S3 " O  "
+# define S1 " N  "," CA "
+# define S2 " N  "," CA "," CB "
+# define S3 " C  "," O  "
 
 const char atom[20][15][5]={
 {S1,S3},                                                                /* gly */
