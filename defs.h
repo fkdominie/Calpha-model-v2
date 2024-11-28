@@ -1,8 +1,8 @@
 /************* simulation settings ******************************************/
-# define NTMP 1                    /* # temperatures                        */
-# define TMAX 0.88                 /* max temperature                       */
-# define TMIN 0.88                 /* min temperature                       */
-# define BOX 100                   /* simulation box                        */
+# define NTMP 8                    /* # temperatures                        */
+# define TMAX 1.25                 /* max temperature                       */
+# define TMIN 1.05                 /* min temperature                       */
+# define BOX 150                   /* simulation box                        */
 # define ISTART 1                  /* 0 native, 1 read, 2 random            */
 # define ISEED 1                   /* 1 randomize seed (/dev/urandom)       */
 /************* MD parameters ************************************************/
@@ -21,7 +21,8 @@
 # define FF_BEND 2                 /* bend() -- 1 on, 2 dual, 0 off         */
 # define FF_TORS 2                 /* tors() -- 1 on, 2 dual, 0 off         */
 # define FF_CONT 2                 /* cont() -- 1 on, 2 dual, 0 off         */
-# define FF_EXVOL 2                /* exvol()-- 1 on, 0 off                 */
+# define FF_EXVOL 1                /* exvol()-- 1 on, 0 off                 */
+# define FF_DISULF 2               /* disulfide bonds-- 1 on, 2 dual, 0 off */
 # define FF_SEQ 0                  /* hp()   -- 1 on, 0 off                 */
 # define FF_MULTIBODY 1            /* cont() -- multibody effects           */ 
 /************* measurements *************************************************/
@@ -34,17 +35,18 @@
 # define SNAP2 5000                /* for interval SNAP1 < imd < SNAP2      */
 # define RMSD 2                    /* 1 NATIVE, 2 NATIVE2, 0 off            */
 /************* files input **************************************************/
-# define NATIVE "native_2kdl"
-# define NATIVE2 "native_2kdm"
-# define CONTMAP "smog_2KDL"
-# define CONTMAP2 "smog_2KDM"
+# define NATIVE "native_1j8i_modeller69-93"
+# define NATIVE2 "native_2jp1_modeller61-93"
+# define CONTMAP "smog_1J8I_1"
+# define CONTMAP2 "smog_2Jp1_1"
 # define CONTMAP3 ""
 # define CONTMAP4 ""
-# define START "native_2kdm"
+# define DISULFIDE "disulfide"
+# define START "native_1j8i_modeller69-93"
 # define INPUT "input"
 # define INPUTG "inputg"
-# define CONTPAR "./cont_param_2KDL_smog"
-# define CONTPAR2 "./cont_param_2KDM_smog_0.92"
+# define CONTPAR ""// "./cont_param_2KDL_smog"
+# define CONTPAR2 ""// "./cont_param_2KDM_smog_0.92"
 # define BONDEDPAR ""
 # define BONDEDPAR2 ""
 /************* files output *************************************************/

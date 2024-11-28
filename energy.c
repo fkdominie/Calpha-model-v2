@@ -35,13 +35,15 @@ int npair2;                        /* # native contacts                     */
 int npair3;
 int npair4;
 int npair5;
+int ndpair;
 int spair;                         /* # native contacts                     */
 int qpair;                         /* # native contacts                     */
 int ip1[MAXP],ip2[MAXP];           /* list of contacts                      */
 int ip3[MAXP],ip4[MAXP];           /* list of contacts                      */
 int ip5[MAXP],ip6[MAXP];           /* list of contacts                      */
 int ip7[MAXP],ip8[MAXP];           /* list of contacts                      */
-int ip9[MAXP],ip10[MAXP];           /* list of contacts                     */
+int ip9[MAXP],ip10[MAXP];          /* list of contacts                     */
+int id1[MAXP],id2[MAXP];           /* list of contacts                     */
 int iq1[MAXP],iq2[MAXP];           /* list of contacts                      */
 int mc1[MAXP],mc2[MAXP];           /* common native1/native2 contacts       */
 int nni1[MAXP],nnj1[MAXP];
@@ -63,6 +65,8 @@ double distp5[MAXP];               /* distances                             */
 double distp6[MAXP];               /* distances                             */
 double distp7[MAXP];               /* distances                             */
 double distp8[MAXP];               /* distances                             */
+double distd1[MAXP];               /* distances                             */
+double distd2[MAXP];               /* distances                             */
 double dist_rep1[MAXP];           /* distances                             */
 double dist_rep2[MAXP];           /* distances                             */
 double distg1[MAXP];              /* distances                             */
@@ -331,7 +335,8 @@ void bond_ecalc(double *e,double *f,double db,double kbon) {
 double bond(int iflag) {
   int i,j,k;
   double fbx,fby,fbz,fb,fb1 = 0,fb2 = 0;
-  double e = 0,e1 = 0,e2 = 0,et,db,db2,bb;
+  double e = 0,e1 = 0,e2 = 0,et,db,db2,bb,r;
+  double dx,dy,dz;
   static double bet=10.0;
   FILE *fp;
 
@@ -370,6 +375,25 @@ double bond(int iflag) {
       }
     }
 
+    if (FF_DISULF > 0) {
+    
+      for (k = 0; k < ndpair; ++k) {
+	i = id1[k]; j = id2[k];
+	
+	db = (r = sqrt(vec2(i,j,&dx,&dy,&dz))) - distd1[k];
+	bond_ecalc(&et,&fb,db,kbon);
+	
+	if (FF_DISULF == 2) {
+	  if ( db * (db2 = r - distd2[k]) < 0 ) continue;
+	  if ( db * (db2 - db) < 0 ) bond_ecalc(&et,&fb,db2,kbon);
+	}
+	
+	e += et;
+	
+	add_f(i,j,fb,dx,dy,dz);
+      }
+    }
+    
     return e;
   }
 

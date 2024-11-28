@@ -988,8 +988,11 @@ void init(int iflag) {
 
   npair = npair2 = spair = 0;
   npair3 = npair4 = npair5 = 0;
-  for (m = 0; m < MAXP; m++)
+  ndpair = 0;
+  for (m = 0; m < MAXP; m++) {
     ip1[m] = ip2[m] = ip3[m] = ip4[m] = ip5[m] = ip6[m] = ip7[m] = ip8[m] = ip9[m] = ip10[m] = 0;
+    id1[m] = id2[m] = 0;
+  }
   for (i=0; i < N; i++) for (j = 0;j < N; j++) cc[i][j] = 0;  
   for (m=0; m < MAXP; m++) dual1[m] = dual2[m] = 0;    
 
@@ -1029,10 +1032,27 @@ void init(int iflag) {
     write_natdist("cmap4.out",distp7,npair4,ip7,ip8);
   } else printf("<init> CONTMAP4: No data (%s)\n",CONTMAP4);
 
+  if (FF_DISULF > 0) {
+    double dist_dummy[MAXP];
+    ndpair = read_contacts(DISULFIDE,id1,id2);
+    if (ndpair > 0) {
+      printf("<init> DISULFIDE: Read %i contacts  (%s)\n",ndpair, DISULFIDE);
+      get_natdist(distd1,dist_dummy,id1,id2,ndpair,xnat,ynat,znat);
+      printf("<init> DISULFIDE: Writing to %s\n","cmap_disulf.out");
+      write_natdist("cmap_disulf.out",distd1,ndpair,id1,id2);
+      if (FF_DISULF > 1) {
+	get_natdist(distd2,dist_dummy,id1,id2,ndpair,xnat2,ynat2,znat2);
+	printf("<init> DISULFIDE: Writing to %s\n","cmap_disulf2.out");
+	write_natdist("cmap_disulf2.out",distd2,ndpair,id1,id2);
+      }
+    } else printf("<init> DISULFIDE: No data (%s)\n",DISULFIDE);
+  }
+  
   if (npair  > MAXP) {printf("npair too big\n"); exit(-1);}
   if (npair2 > MAXP) {printf("npair2 too big\n"); exit(-1);}
   if (npair3 > MAXP) {printf("npair3 too big\n"); exit(-1);}
   if (npair4 > MAXP) {printf("npair4 too big\n"); exit(-1);}
+  if (ndpair > MAXP) {printf("ndpair too big\n"); exit(-1);}
 
   /* contact interactions */
 

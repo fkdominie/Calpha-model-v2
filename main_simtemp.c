@@ -15,15 +15,15 @@ int main (int argc,char *argv[])
   int i,j;
   double o[NOBS],so[NTMP][NOBS];
   double nn1=0,nn2=0,rmsd1=0.0,rmsd2=0.0;
-  double qcut_a = 58;
-  double qcut_b = 76;
+  //  double qcut_a = 58;
+  //  double qcut_b = 76;
     
   printf("Exec: ");
   for (i = 0; i < argc; i++)
     printf("%s ",argv[i]);
   printf("\n\n");
 
-  printf("<main_simtemp> qcut_a %lf qcut_b %lf \n",qcut_a,qcut_b);
+  //  printf("<main_simtemp> qcut_a %lf qcut_b %lf \n",qcut_a,qcut_b);
 
   for (i = 0; i < NOBS; i++) {
     for (j = 0; j < NTMP; j++) {
@@ -43,17 +43,19 @@ int main (int argc,char *argv[])
     
     if ((imd+1) % ISAMP == 0) {
       rmsd1 = rmsd_calc(xnat,ynat,znat,x,y,z,0,N-1);
-      rmsd2 = rmsd_calc(xnat2,ynat2,znat2,x,y,z,0,N-1);
+      //      rmsd2 = rmsd_calc(xnat2,ynat2,znat2,x,y,z,0,N-1);
       
       o[1]=Ekin; o[2]=Epot; o[3]=Ebon; o[4]=Eben; o[5]=Erep; o[6]=Etor;
       o[7]=Econ1; o[8]=Econ2; o[9]=Ecorr;  o[10]=Ecc; o[11]=Ecb;
 
       o[12] = rmsd1; 
       o[13] = rmsd2;
-      o[14] = (nn1 = no_cont()) / max(npair,1);  
-      o[15] = (nn2 = no_cont2()) / max(npair2,1);
-      o[16] = (nn1 > qcut_a ? 1 : 0);
-      o[17] = (nn2 > qcut_b ? 1 : 0);
+      o[14] = nn1 = no_cont();
+      o[15] = nn2 = no_cont2();
+      o[16] = dist_disulf(0);
+      o[17] = dist_disulf(1);
+      //      o[16] = (nn1 > qcut_a ? 1 : 0);
+      //      o[17] = (nn2 > qcut_b ? 1 : 0);
 
       if ((imd+1) > NTHERM) {
         so[ind][0]++; for (i=1 ; i<NOBS; i++) so[ind][i] += o[i];

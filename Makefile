@@ -6,6 +6,7 @@ SCRIPT2 = pdb2cont
 SCRIPT3 = analys_conf
 SCRIPT4 = conf2pdb
 SCRIPT5 = analys_conf_MBAR
+SCRIPT6 = pdb2pdb
 
 FILES.c = energy.c geometry.c sampling.c obs.c misc.c utils.c
 FILES.h = defs.h sys.h 
@@ -51,6 +52,9 @@ ${SCRIPT4}: tools/conf2pdb.c tools/conf2pdb.o ${FILES.c} ${FILES.o}
 
 ${SCRIPT5}: tools/analys_conf_MBAR.c tools/analys_conf_MBAR.o ${FILES.c} ${FILES.o}
 	${CC} -o analys_conf_MBAR ${CFLAGS} tools/analys_conf_MBAR.c  ${FILES.o} -lm 
+
+${SCRIPT6}: tools/pdb2pdb.c tools/pdb2pdb.o 
+	${CC} -o pdb2pdb ${CFLAGS} tools/pdb2pdb.c -lm 
 
 
 
