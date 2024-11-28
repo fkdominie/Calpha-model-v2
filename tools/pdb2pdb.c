@@ -97,30 +97,31 @@ int main(int argc,char *argv[]) {
 # include <stdlib.h>
 # include <string.h>
 # define NMAX 200 
-# define S1 " N  "," CA "," C  "," O  "
-# define S2 " N  "," CA "," C  "," O  "," CB "
+# define S1 " N  "," CA "," C  "
+# define S2 " N  "," CA "," C  "," CB "
+# define S3 " O  "
 
 const char atom[20][15][5]={
-{S1},                                                                /* gly */
-{S2},                                                                /* ala */
-{S2," CG1"," CG2"},                                                  /* val */
-{S2," CG "," CD1"," CD2"},                                           /* leu */
-{S2," CG1"," CG2"," CD1"},                                           /* ile */
-{S2," OG "},                                                         /* ser */
-{S2," OG1"," CG2"},                                                  /* thr */
-{S2," SG "},                                                         /* cys */
-{S2," CG "," SD "," CE "},                                           /* met */
-{S2," CG "," CD "},                                                  /* pro */
-{S2," CG "," OD1"," OD2"},                                           /* asp */
-{S2," CG "," OD1"," ND2"},                                           /* asn */
-{S2," CG "," CD "," OE1"," OE2"},                                    /* glu */
-{S2," CG "," CD "," OE1"," NE2"},                                    /* gln */
-{S2," CG "," CD "," CE "," NZ "},                                    /* lys */
-{S2," CG "," CD "," NE "," CZ "," NH1"," NH2"},                      /* arg */
-{S2," CG "," ND1"," CD2"," CE1"," NE2"},                             /* his */
-{S2," CG "," CD1"," CD2"," CE1"," CE2"," CZ "},                      /* phe */
-{S2," CG "," CD1"," CD2"," CE1"," CE2"," CZ "," OH "},               /* tyr */
-{S2," CG "," CD1"," CD2"," NE1"," CE2"," CE3"," CZ2"," CZ3"," CH2"}  /* trp */
+{S1,S3},                                                                /* gly */
+{S2,S3},                                                                /* ala */
+{S2," CG1"," CG2",S3},                                                  /* val */
+{S2," CG "," CD1"," CD2",S3},                                           /* leu */
+{S2," CG1"," CG2"," CD1",S3},                                           /* ile */
+{S2," OG ",S3},                                                         /* ser */
+{S2," OG1"," CG2",S3},                                                  /* thr */
+{S2," SG ",S3},                                                         /* cys */
+{S2," CG "," SD "," CE ",S3},                                           /* met */
+{S2," CG "," CD ",S3},                                                  /* pro */
+{S2," CG "," OD1"," OD2",S3},                                           /* asp */
+{S2," CG "," OD1"," ND2",S3},                                           /* asn */
+{S2," CG "," CD "," OE1"," OE2",S3},                                    /* glu */
+{S2," CG "," CD "," OE1"," NE2",S3},                                    /* gln */
+{S2," CG "," CD "," CE "," NZ ",S3},                                    /* lys */
+{S2," CG "," CD "," NE "," CZ "," NH1"," NH2",S3},                      /* arg */
+{S2," CG "," ND1"," CD2"," CE1"," NE2",S3},                             /* his */
+{S2," CG "," CD1"," CD2"," CE1"," CE2"," CZ ",S3},                      /* phe */
+{S2," CG "," CD1"," CD2"," CE1"," CE2"," CZ "," OH ",S3},               /* tyr */
+{S2," CG "," CD1"," CD2"," NE1"," CE2"," CE3"," CZ2"," CZ3"," CH2",S3}  /* trp */
 };
 
 const char amino[20][4]={"GLY","ALA","VAL","LEU","ILE","SER","THR",
