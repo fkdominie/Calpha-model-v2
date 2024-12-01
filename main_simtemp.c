@@ -42,9 +42,12 @@ int main (int argc,char *argv[])
     mdstep();
     
     if ((imd+1) % ISAMP == 0) {
-      rmsd1 = rmsd_calc(xnat,ynat,znat,x,y,z,0,N-1);
-      //      rmsd2 = rmsd_calc(xnat2,ynat2,znat2,x,y,z,0,N-1);
       
+      //      rmsd1 = rmsd_calc(xnat,ynat,znat,x,y,z,9,68);
+      //      rmsd2 = rmsd_calc(xnat2,ynat2,znat2,x,y,z,7,53);
+      rmsd1 = rmsd_calc(xnat,ynat,znat,x,y,z,7,53);
+      rmsd2 = rmsd_calc(xnat2,ynat2,znat2,x,y,z,9,68);
+   
       o[1]=Ekin; o[2]=Epot; o[3]=Ebon; o[4]=Eben; o[5]=Erep; o[6]=Etor;
       o[7]=Econ1; o[8]=Econ2; o[9]=Ecorr;  o[10]=Ecc; o[11]=Ecb;
 

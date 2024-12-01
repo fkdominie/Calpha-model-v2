@@ -14,38 +14,22 @@ double xcro[NCR], ycro[NCR], zcro[NCR];  /* Back up for crowders coordinates*/
 /***** input/output *********************************************************/
 /****************************************************************************/
 int read_native(char *fn,double *xr,double *yr,double *zr,int *nat) {
-  int i, j, n = 0;
+  int j, n = 0;
+  double tmpx,tmpy,tmpz;
   FILE *fp1;
 
-  fp1 = fopen(fn,"r");
-  if (fp1 == NULL) return 0;
+  if ( NULL == (fp1 = fopen(fn,"r")) ) return 0;
 
-  for (i = 0; i < N; i++) {
-    if (1 != fscanf(fp1,"%i ",&j)) break;
-    if (3 != fscanf(fp1,"%lf %lf %lf",xr + j,yr + j,zr + j)) break;
-    //    printf("<read_native> %i %lf %lf %lf\n",j,xr[j],yr[j],zr[j]);
-    if (j < 0 || j > N-1) continue;
+  while (4 == fscanf(fp1,"%i %lf %lf %lf",&j,&tmpx,&tmpy,&tmpz)) {
+    if (j < 0 || j > N-1) {
+      fprintf(fp_log,"<read_native> (%s) Ignoring j = %i \n",fn,j);
+      continue;
+    }
+    xr[j] = tmpx; yr[j] = tmpy; zr[j] = tmpz;
     nat[j] = 1;
     ++n;
   }    
-  fclose(fp1);
-  
-  return n;
-}
-/****************************************************************************/
-int read_native2(char *fn,double *xr,double *yr,double *zr, int a1, int a2) {
-  int i, n = 0, nread;
-  FILE *fp1;
 
-  fp1 = fopen(fn,"r");
-  if (fp1 == NULL) return 0;
-
-  for (i = 0; i <= a2 ; i++) {
-    if (i < a1 || i > N-1) continue;
-    nread = fscanf(fp1,"%lf %lf %lf",xr + i,yr + i,zr + i);
-    if (nread != 3) break;
-    ++n;      
-  }    
   fclose(fp1);
   
   return n;
@@ -54,16 +38,18 @@ int read_native2(char *fn,double *xr,double *yr,double *zr, int a1, int a2) {
 int read_contacts(char *fn,int *ip1,int *ip2) {
   int n = 0;
   FILE *fp1;
-  
-  fp1 = fopen(fn,"r");
 
-  if (fp1 == NULL) return 0;
+  if ( NULL == (fp1 = fopen(fn,"r")) )
+    return 0;
   
   while (2 == fscanf(fp1,"%i %i",ip1 + n,ip2 + n)) {
-    if (ip1[n] >= 0 && ip1[n] <= N-1 &&
-	ip2[n] >= 0 && ip2[n] <= N-1)
+    if (ip1[n] < 0 || ip1[n] > N-1 || ip2[n] < 0 || ip2[n] > N-1) 
+      fprintf(fp_log,"<read_contacts> (%s) Ignoring %3d, %3d\n",
+	      fn,ip1[n],ip2[n]);
+    else 
       n++;
   }
+  
   fclose(fp1);
 
   return n;

@@ -403,7 +403,7 @@ int read_conf(int iflag,char *fn,char *fdir) {
   return 0;
 } 
 /****************************************************************************/
-void correct_natdist(int *ip1,int *ip2,int n,double *dist2,double dist_rep[],
+void correct_dist(int *ip1,int *ip2,int n,double *dist2,double dist_rep[],
 		      int *dual,double *xn,double *yn,double *zn) {
   /* Look for native contacts in one (native) structure for which the distance
      between the beads is smaller in an alternate structure. Reduce repulsive
@@ -421,7 +421,7 @@ void correct_natdist(int *ip1,int *ip2,int n,double *dist2,double dist_rep[],
 	   (zn[i] - zn[j]) * (zn[i] - zn[j]));
     if (r2 > dist2[m]) continue;
     dist_rep[m] = r2;
-    fprintf(fp_log,"<correct_natdist> %s cont %3i %3i (%3.5lf < %3.5lf). Setting repulsive distance to %lf\n",
+    fprintf(fp_log,"<correct_dist> %s cont %3i %3i (%3.5lf < %3.5lf). Setting repulsive distance to %lf\n",
 	    dual[m] > 0 ? "Dual  " : "Native",i,j,sqrt(r2),sqrt(dist2[m]),sqrt(dist_rep[m]));
   }
 
@@ -905,7 +905,12 @@ void init(int iflag) {
   printf("<init> Creating directory %s\n",CHECKDIR);
   mkdir(CHECKDIR, 0777);
 
-  fp_log = fopen(LOGFILE,"a");
+  char str[100];
+  
+  strcpy(str,OUTDIR);
+  strcat(str,LOGFILE);
+  printf("<init> Opening logfile (%s)\n",str);
+  fp_log = fopen(str,"a");
 
   /* constants */
   
@@ -1034,18 +1039,21 @@ void init(int iflag) {
 
   if (FF_DISULF > 0) {
     double dist_dummy[MAXP];
+     printf("<init> DISULFIDE: FF_DISULF %i\n",FF_DISULF);
     ndpair = read_contacts(DISULFIDE,id1,id2);
     if (ndpair > 0) {
       printf("<init> DISULFIDE: Read %i contacts  (%s)\n",ndpair, DISULFIDE);
+      printf("<init> DISULFIDE: ");
       get_natdist(distd1,dist_dummy,id1,id2,ndpair,xnat,ynat,znat);
       printf("<init> DISULFIDE: Writing to %s\n","cmap_disulf.out");
       write_natdist("cmap_disulf.out",distd1,ndpair,id1,id2);
       if (FF_DISULF > 1) {
+	printf("<init> DISULFIDE: ");
 	get_natdist(distd2,dist_dummy,id1,id2,ndpair,xnat2,ynat2,znat2);
 	printf("<init> DISULFIDE: Writing to %s\n","cmap_disulf2.out");
 	write_natdist("cmap_disulf2.out",distd2,ndpair,id1,id2);
       }
-    } else printf("<init> DISULFIDE: No data (%s)\n",DISULFIDE);
+    } 
   }
   
   if (npair  > MAXP) {printf("npair too big\n"); exit(-1);}
@@ -1076,8 +1084,8 @@ void init(int iflag) {
     }
     spair = get_shared_contacts(mc1,mc2,dual1,dual2);
     write_shared_dist("cmap_corr.out",mc1,mc2,spair);
-    correct_natdist(ip1,ip2,npair,distp2,dist_rep1,dual1,xnat2,ynat2,znat2);
-    correct_natdist(ip3,ip4,npair2,distp4,dist_rep2,dual2,xnat,ynat,znat);
+    correct_dist(ip1,ip2,npair,distp2,dist_rep1,dual1,xnat2,ynat2,znat2);
+    correct_dist(ip3,ip4,npair2,distp4,dist_rep2,dual2,xnat,ynat,znat);
   }
 
   /* contact parameters from file */  
@@ -1138,7 +1146,6 @@ void init(int iflag) {
       x[i] = xnat[i];
       y[i] = ynat[i];
       z[i] = znat[i];
-      //      printf("%lf %lf %lf \n",x[i],y[i],z[i]);
     }
     if (1 != cart2dof()) printf("Error initial configuration");
   } else if (ISTART == 1) {     /* read */
@@ -1161,10 +1168,6 @@ void init(int iflag) {
     printf("\nInvalid ISTART\n");
     exit(-1);
   }
-
-  //  printf(" Rgyr: 1-56 %lf 8-52 %lf \n",sqrt(gyr2(0,N-1)),sqrt(gyr2(7,51)));
-  //  exit(-1);
-  
   /* Initial conformation of crowders (random) */
   
   for (i = 0; i < NCR; i++){
@@ -1177,7 +1180,6 @@ void init(int iflag) {
 
   vxsum=vysum=vzsum=0;
   for (i=0;i<N;i++) {
-    //    printf("%i bl %f th %f ph %f\n",i,bn[i],180*thn[i]/pi,180*phn[i]/pi);
     vx[i]=sqrt(1/beta[ind]/mbd)*gasdev2();
     vy[i]=sqrt(1/beta[ind]/mbd)*gasdev2();
     vz[i]=sqrt(1/beta[ind]/mbd)*gasdev2();

@@ -1,7 +1,7 @@
 /************* simulation settings ******************************************/
 # define NTMP 8                    /* # temperatures                        */
-# define TMAX 1.25                 /* max temperature                       */
-# define TMIN 1.05                 /* min temperature                       */
+# define TMAX 1.00                 /* max temperature                       */
+# define TMIN 0.80                 /* min temperature                       */
 # define BOX 150                   /* simulation box                        */
 # define ISTART 1                  /* 0 native, 1 read, 2 random            */
 # define ISEED 1                   /* 1 randomize seed (/dev/urandom)       */
@@ -35,14 +35,14 @@
 # define SNAP2 5000                /* for interval SNAP1 < imd < SNAP2      */
 # define RMSD 2                    /* 1 NATIVE, 2 NATIVE2, 0 off            */
 /************* files input **************************************************/
-# define NATIVE "native_1j8i_modeller69-93"
-# define NATIVE2 "native_2jp1_modeller61-93"
-# define CONTMAP "smog_1J8I_1"
-# define CONTMAP2 "smog_2Jp1_1"
+# define NATIVE "native_2jp1_dimer_8-54_full"
+# define NATIVE2 "native_1j8i_10-69_full"
+# define CONTMAP "smog_2jp1_dimer_8-54_nodisulfide"
+# define CONTMAP2 "smog_1j8i_10-69_nodisulfide"
 # define CONTMAP3 ""
 # define CONTMAP4 ""
 # define DISULFIDE "disulfide"
-# define START "native_1j8i_modeller69-93"
+# define START "native_2jp1_dimer_8-54_full"
 # define INPUT "input"
 # define INPUTG "inputg"
 # define CONTPAR ""// "./cont_param_2KDL_smog"

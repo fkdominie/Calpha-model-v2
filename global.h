@@ -145,8 +145,8 @@ int read_momenta(char *fn,char *fdir);
 int read_forces(char *fname,char *fdir);
 int read_data(char *fname,char *fdir,long *imd,long *seed,long *orig);
 int read_checkpnt(void);
-void correct_natdist(int *ip1,int *ip2,int n,double *dist2,double dist_rep[],
-		     int *dual,double *xn,double *yn,double *zn);
+void correct_dist(int *ip1,int *ip2,int n,double *dist2,double dist_rep[],
+		  int *dual,double *xn,double *yn,double *zn);
 void write_shared_dist(char *fn,int *mc1,int *mc2,int spair);
 int get_shared_contacts(int *mc1,int *mc2,int *dual1,int *dual2);
 void get_natdist(double *dist,double *dist2,int *ip1,int *ip2,int n,
@@ -219,7 +219,6 @@ void dof2cart(int iflag);
 int cart2dof(void);
 /* utils.c */
 int read_native(char *fn,double *xr,double *yr,double *zr,int *nat);
-int read_native2(char *fn, double *xr, double *yr, double *zr, int a1, int a2);
 int read_contacts(char *fn,int *ip1,int *ip2);
 void dumppdb(char *fn,double *o,int nobs);
 double rmsd_calc(double *x1,double *y1,double *z1,
