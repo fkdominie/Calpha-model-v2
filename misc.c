@@ -540,7 +540,7 @@ void write_shared_dist(char *fn,int *mc1,int *mc2,int spair) {
   strcat(str,fn);
 
   printf("<write_shared_dist> Found %i shared contacts between %s and %s \n",
-	 spair,NATIVE,NATIVE2);    
+	 spair,CONTMAP,CONTMAP2);    
   printf("<write_shared_dist> Writing to %s\n",str);
   
   fp1 = fopen(str,"w");
@@ -1140,6 +1140,8 @@ void init(int iflag) {
 
   /* initial chain configuration  */  
 
+  int idum[N];
+
   if (ISTART == 0) {  /* native */
     printf("<init> Initializing chain(s) from NATIVE %s\n",NATIVE);
     for (i = 0; i < N; i++) {
@@ -1150,13 +1152,8 @@ void init(int iflag) {
     if (1 != cart2dof()) printf("Error initial configuration");
   } else if (ISTART == 1) {     /* read */
     printf("<init> Initializing chain(s) from START %s\n",START);
-    fp1 = fopen(START,"r");
-    for (i = 0; i < N; i++) {
-      if (4 != fscanf(fp1,"%i %lf %lf %lf",&j,&x[i],&y[i],&z[i]))
-	break;
-    }
-    fclose(fp1);
-    if (1 != cart2dof()) printf("Error initial configuration");
+    if (N != read_native(START,x,y,z,idum)) printf("Error initial configuration 1\n");
+    if (1 != cart2dof()) printf("Error initial configuration 2\n");
   } else if (ISTART == 2) {     /* random */
     printf("<init> Initializing chain(s) from random configuration\n");
     for (i = 0; i < N-1; i++) b[i]  =  bn[i] ;

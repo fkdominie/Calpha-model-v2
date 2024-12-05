@@ -480,10 +480,10 @@ double bend(int iflag) {
 	
 	e += et;
 	
-	//	cth = max(cos(th[j]),-cthmin);
-	//	sth = max(sin(th[j]),sthmin);
-	cth = cos(th[j]);
-	sth = sin(th[j]);
+	cth = max(cos(th[j]),-cthmin);
+	sth = max(sin(th[j]),sthmin);
+	//	cth = cos(th[j]);
+	//	sth = sin(th[j]);
 	if (sin(th[j]) < sthmin) {
 	  fprintf(fp_log,"bend : j %i th %lf thn %lf %lf\n",j,th[j]*180./pi,thn[j]*180/pi,thn2[j]*180/pi);
 	  fflush(fp_log);
