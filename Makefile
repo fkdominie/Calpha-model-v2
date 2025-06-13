@@ -1,12 +1,12 @@
 PROGRAM1 = fixtemp
 PROGRAM2 = simtemp
-PROGRAM3 = paramfiles
 SCRIPT1 = constants
 SCRIPT2 = pdb2cont
 SCRIPT3 = analys_conf
 SCRIPT4 = conf2pdb
 SCRIPT5 = analys_conf_MBAR
 SCRIPT6 = pdb2pdb
+SCRIPT7 = make_potential
 
 FILES.c = energy.c geometry.c sampling.c obs.c misc.c utils.c
 FILES.h = defs.h sys.h 
@@ -35,9 +35,6 @@ ${PROGRAM1}: main_fixtemp.c ${FILES.c} ${FILES.o}
 ${PROGRAM2}: main_simtemp.c ${FILES.c} ${FILES.o}
 	${CC} -o main ${CFLAGS} main_simtemp.c ${FILES.o} -lm 
 
-${PROGRAM3}: main_paramfiles.c ${FILES.c} ${FILES.o} 
-	${CC} -o main_paramfiles ${CFLAGS} main_paramfiles.c ${FILES.o} -lm 
-
 ${SCRIPT1}: tools/constants.c ${FILES.o}
 	${CC} -o constants ${CFLAGS} tools/constants.c -lm
 
@@ -56,6 +53,8 @@ ${SCRIPT5}: tools/analys_conf_MBAR.c tools/analys_conf_MBAR.o ${FILES.c} ${FILES
 ${SCRIPT6}: tools/pdb2pdb.c tools/pdb2pdb.o 
 	${CC} -o pdb2pdb ${CFLAGS} tools/pdb2pdb.c -lm 
 
+${SCRIPT7}: tools/make_potential.c tools/make_potential.o ${FILES.c} ${FILES.o} 
+	${CC} -o make_potential ${CFLAGS} tools/make_potential.c ${FILES.o} -lm 
 
 
 energy.o: ${FILES.h} param.h

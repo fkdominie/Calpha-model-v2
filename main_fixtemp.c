@@ -14,16 +14,16 @@ int main (int argc,char *argv[])
 {
   int i,j;
   double o[NOBS],so[NTMP][NOBS];
-  double nn1=0,nn2=0,rmsd1=0.0,rmsd2=0.0;
-  double qcut_a = 58;
-  double qcut_b = 76;
+  double nn1=0,nn2=0,rmsd1=0,rmsd2=0,rg1=0,rg2=0;
+  //  double qcut_a = 58;
+  //  double qcut_b = 76;
   
   printf("Exec: ");
   for (i = 0; i < argc; i++)
     printf("%s ",argv[i]);
   printf("\n\n");
 
-  printf("<main_fixtemp> qcut_a %lf qcut_b %lf \n",qcut_a,qcut_b);
+  //  printf("<main_fixtemp> qcut_a %lf qcut_b %lf \n",qcut_a,qcut_b);
 
   if (NTMP > 1) {
     printf("NTMP > 1\nExiting...\n");
@@ -44,18 +44,21 @@ int main (int argc,char *argv[])
 
     if ((imd+1) % ISAMP == 0) {
 
-      rmsd1 = rmsd_calc(xnat,ynat,znat,x,y,z,9,68);
-      rmsd2 = rmsd_calc(xnat2,ynat2,znat2,x,y,z,7,53);
-
       o[1]=Ekin; o[2]=Epot; o[3]=Ebon; o[4]=Eben; o[5]=Erep; o[6]=Etor;
       o[7]=Econ1; o[8]=Econ2; o[9]=Ecorr;  o[10]=Ecc; o[11]=Ecb;
+      
+      rg1 = sqrt( gyr2(iBeg[0],iEnd[0]) );
+      rmsd1 = rmsd_calc(xnat,ynat,znat,x,y,z,10,67);
+      rmsd2 = rmsd_calc(xnat2,ynat2,znat2,x,y,z,10,67);
 
-      o[12] = rmsd1; 
-      o[13] = rmsd2;
-      o[14] = no_cont();
-      o[15] = no_cont2();
-      o[16] = dist_disulf(0);
-      o[17] = dist_disulf(1);
+      o[12] = rg1;
+      o[13] = rg2;
+      o[14] = rmsd1; 
+      o[15] = rmsd2;
+      o[16] = no_cont();
+      o[17] = no_cont2();
+      o[18] = dist_disulf(0);
+      o[19] = dist_disulf(1);
           
       if ((imd+1) > NTHERM) {
         so[ind][0]++; for (i=0 ; i<NOBS; i++) so[ind][i] += o[i];

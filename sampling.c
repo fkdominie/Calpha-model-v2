@@ -93,7 +93,7 @@ void mdstep(void) {
   for (i = 0; i < N; i++) fx[i] = fy[i] = fz[i] = 0;
   
   Epot=(Ebon=bond(0))+(Eben=bend(0))+(Erep=exvol(0))+(Etor=torsion(0))+
-    (Econ=cont(0))+(Ehp=hp(0))+(Ecc=crowd_crowd(0))+(Ecb=crowd_bead(0)); 
+    (Econ=cont(0))+(Ecc=crowd_crowd(0))+(Ecb=crowd_bead(0)); 
   
   Ekin=0;
   

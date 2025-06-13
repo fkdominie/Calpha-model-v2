@@ -47,34 +47,6 @@ int no_cont2(void) {
   return nc;
 }
 /****************************************************************************/
-int no_cont3(void) {
-  int i,j,m,nc=0;
-
-  for (m=0;m<npair3;m++) {
-    i=ip5[m]; j=ip6[m];
-    if (i > N-1 || j > N-1) continue;
-    if ((x[i]-x[j])*(x[i]-x[j])+
-	(y[i]-y[j])*(y[i]-y[j])+
-	(z[i]-z[j])*(z[i]-z[j])>1.44*distp6[m]) continue;
-    nc++;
-  }
-  return nc;
-}
-/****************************************************************************/
-int no_cont4(void) {
-  int i,j,m,nc=0;
-
-  for (m=0;m<npair4;m++) {
-    i=ip7[m]; j=ip8[m];
-    if (i > N-1 || j > N-1) continue;
-    if ((x[i]-x[j])*(x[i]-x[j])+
-	(y[i]-y[j])*(y[i]-y[j])+
-	(z[i]-z[j])*(z[i]-z[j])>1.44*distp8[m]) continue;
-    nc++;
-    }
-  return nc;
-}
-/****************************************************************************/
 void histo_contmap(int iflag, int ind)
 {
   static double his[N][N],n;
@@ -310,7 +282,7 @@ void histo_bend(int iflag) {
 }
 /****************************************************************************/
 void histo_tors(int iflag,int ia) {
-  static double low=0,high=360;
+  static double low=-180,high=180;
   static double his[NTMP][NBIN],eps;
   static int out[NTMP];
   double x,sum;
@@ -334,9 +306,9 @@ void histo_tors(int iflag,int ia) {
   if (iflag == 0) {
 
     x = ph[ia];
-    while (x < 0) x += pi2;
-    while (x > pi2) x -= pi2;
-    x *= 180 / pi;
+    while (x < -pi) x += pi2;
+    while (x > +pi) x -= pi2;
+    x *= rad2deg;
 
     if (x >= low && x < high) {
 	k = (x - low) / eps;

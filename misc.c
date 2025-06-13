@@ -11,6 +11,7 @@
 # include "global.h"
 /************* miscellaneous ************************************************/
 double pi,pi2,pid2;                /* pi,2*pi,pi/2                          */
+double deg2rad,rad2deg;            /* conversion                            */
 long seed=-11;                     /* random number seed                    */
 long orig_seed;                    /* original seed                         */
 char OUTDIR[100];                  /* output directory                      */
@@ -18,8 +19,14 @@ int FANALYS = 0;                   /* flag for analysis (post processing)   */
 FILE *fp_log;
 /****************************************************************************/
 void read_cont_param(char fn[],int ip1[],int ip2[],int npair,double kcont[]);
-void read_bonded_param(char fn[],double v1[],double k1[],double v2[],double k2[],
-		       double v3[],double k3[], double k4[]);
+void set_bonded_param(double *bn,double *thn,double phn[][3],
+		      double *kbond,double *kbend,double ktor[][3],
+		      double *xnat,double *ynat,double *znat,int nnat);
+void read_disregs(char fn[],double *b,double p[][3],double kp[][3],int *dis);
+void read_bonded_param(char *fn,double *b,double *t,double p[][3],
+		       double *kb,double *kt,double kp[][3]);
+void write_bonded_param(double *b,double *t,double p[][3],double *kb,
+			double *kt,double kp[][3],char *dir,char *fn);
 /****************************************************************************/
 /***** INPUT/OUTPUT *********************************************************/
 /****************************************************************************/
@@ -32,15 +39,11 @@ void printinfo(void) {
   printf("  NTMP %i TMIN %lf TMAX %lf \n",NTMP, TMIN, TMAX);
   printf("  BOX %i \n",BOX);
   printf("Force field:\n");
-  printf("  FF_BOND %i FF_BEND %i FF_TORS %i\n",FF_BOND,FF_BEND,FF_TORS);
-  printf("  FF_CONT %i FF_SEQ %i \n",FF_CONT,FF_SEQ);
-  printf("  kbon %f kth %f kph1 %f kph3 %f \n",
-	 kbon,kth,kph1,kph3);
-  printf("  krep %f kcon %f khp %f \n",krep,kcon,khp);
-  printf("  eps %f sigsa %f \n",eps,sigsa);
+  printf("  FF_BOND %i FF_BEND %i FF_TORS %i \n",FF_BOND,FF_BEND,FF_TORS);
+  printf("  FF_CONT %i \n",FF_CONT);
   if (NCR > 0){
     printf("Interaction parameters crowders:\n");
-    printf("  epsilonrep %lf rcrowd %lf srefcr %lf\n",epsilonrep,rcrowd,srefcr);
+    printf("  rcrowd %lf srefcr %lf\n",rcrowd,srefcr);
   }
   if (NCH > 0) {
     printf("MD parameters chains:\n");
@@ -65,7 +68,7 @@ void ramachan(char *fn,double b,double th,double ph) {
   strcat(str,fn);
 
   fp = fopen(str,"a");
-  fprintf(fp,"%.4f %.4f %.4f\n",b,th*180/pi,ph*180/pi);
+  fprintf(fp,"%.4f %.4f %.4f\n",b,th*rad2deg,ph*rad2deg);
   fclose(fp);
 }
 /****************************************************************************/
@@ -171,7 +174,7 @@ int read_checkpnt(void) {
     fx[i] = fy[i] = fz[i] = 0;
 
   Epot=(Ebon=bond(0))+(Eben=bend(0))+(Erep=exvol(0))+(Etor=torsion(0))+
-    (Econ=cont(0))+(Ehp=hp(0))+(Ecc=crowd_crowd(0))+(Ecb=crowd_bead(0)); 
+    (Econ=cont(0))+(Ecc=crowd_crowd(0))+(Ecb=crowd_bead(0)); 
   
   Ekin = 0;
   for (i=0;i<N;i++)
@@ -205,7 +208,7 @@ void write_checkpnt(void) {
     fxc[i] = fyc[i] = fzc[i] = 0;
 
   Epot=(Ebon=bond(0))+(Eben=bend(0))+(Erep=exvol(0))+(Etor=torsion(0))+
-    (Econ=cont(0))+(Ehp=hp(0))+(Ecc=crowd_crowd(0))+(Ecb=crowd_bead(0)); 
+    (Econ=cont(0))+(Ecc=crowd_crowd(0))+(Ecb=crowd_bead(0)); 
   
   Ekin = 0;
   for (i=0;i<N;i++)
@@ -405,9 +408,9 @@ int read_conf(int iflag,char *fn,char *fdir) {
 /****************************************************************************/
 void correct_dist(int *ip1,int *ip2,int n,double *dist2,double dist_rep[],
 		      int *dual,double *xn,double *yn,double *zn) {
-  /* Look for native contacts in one (native) structure for which the distance
-     between the beads is smaller in an alternate structure. Reduce repulsive
-     range to avoid steric clashes. */
+  /* Looks for native contacts in one native structure for which the distance
+     between the beads is smaller in the alternative structure (for dual-basin
+     potentials). Reduce the repulsive range to avoid steric clashes.*/
   int i,j,m;
   double r2;  
 
@@ -478,6 +481,7 @@ void get_natdist(double *dist,double *dist2,int *ip1,int *ip2,int n,
 void get_nndist(double *distg1,double *distg2,int *ip1,int *ip2,int n,
 		int *nni1,int *nnj1,int *nni2,int *nnj2,
 		double *xn,double *yn,double *zn) {
+  /* Get nearest neighbor distances */
   int i,j,ic,jc,i1,j1,m,q,imin=0,jmin=0;
   double gmin,dg[4];  
 
@@ -520,13 +524,6 @@ void get_nndist(double *distg1,double *distg2,int *ip1,int *ip2,int n,
       nni1[m] = imin; nnj1[m] = jmin; distg1[m] = gmin;
     }
   }
-
-  /*  for (m = 0; m < n; m++) {
-    i = ip1[m]; j = ip2[m]; 
-
-    printf("%i %i %i (%i,%i,%lf) (%i,%i,%lf)\n",m,i,j,
-	   nni1[m],nnj1[m],distg1[m],nni2[m],nnj2[m],distg2[m]); 
-	   } */
 
   return ;
 }
@@ -580,43 +577,23 @@ void write_natdist(char *fn,double *dist,int n,int *ip1,int *ip2) {
   return;
 }
 /****************************************************************************/
-void set_bonded_strength(double *kbond,double *kbend,double *ktor1,double *ktor3,
-			 int *nat) {
-  int i,j,k,l;
+void set_bonded_param(double *bn,double *thn,double phn[][3],
+		      double *kbond,double *kbend,double ktor[][3],
+		      double *xnat,double *ynat,double *znat,int n) {
+  int i;
 
-  for (i = 0; i < N-1; i++) {
-    j = i + 1;
-    kbond[i] = kbon;
-  }
+  /* default values */
   
-  for (i = 0; i < N-2; i++) {
-    j = i + 1;
-    k = i + 2;
-    kbend[j] = kth;
-  }
-  
-  for (i = 0; i < N-3; i++) {
-    j = i + 1;
-    k = i + 2;
-    l = i + 3;
-    if (nat[i] && nat[j] && nat[k] && nat[l]) {
-      ktor1[j] = kph1;
-      ktor3[j] = kph3;
-    } else {
-      ktor1[j] = 0;
-      ktor3[j] = 0;
-    }
-  }
-    
-  return;
-}
-/****************************************************************************/
-void get_bonded_param(double *bn,double *thn,double *phn,
-		      double *xnat,double *ynat,double *znat,
-		      int *nat, int *tor,char *fn) {
-  int i,j,k,l;
-  char str[100];
-  FILE *fp1;
+  for (i = 0; i < N-1; i++) {bn[i] = 3.8; kbond[i] = kbon;}
+  for (i = 1; i < N-1; i++) {thn[i] = 120.0*deg2rad; kbend[i] = kth;}
+  for (i = 1; i < N-2; i++) {phn[i][0] = phn[i][1] = phn[i][2] = 120.0*deg2rad;
+                            ktor[i][0] = kph[0]; ktor[i][1] = kph[1]; ktor[i][2] = kph[2];}
+
+  if (n < N) return ;
+
+  /* native values */
+
+  printf("<set_bonded_param> Setting bonded parameters \n");
 
   for (i = 0; i < N; i++) {
     x[i] = xnat[i];
@@ -624,46 +601,121 @@ void get_bonded_param(double *bn,double *thn,double *phn,
     z[i] = znat[i];
   }
 
-  if (1 != cart2dof()) printf("<get_bonded_param> Error native configuration\n");
+  if (1 != cart2dof()) {
+    printf("<set_bonded_param> Error native configuration\n");
+    exit(-1);
+  }
 
-  for (i = 0; i < N-1; i++) {
-    j = i + 1;
-    if (nat[i] && nat[j])
-      bn[i] =  b[i];
-  }
-  
-  for (i = 0; i < N-2; i++) {
-    j = i + 1;
-    k = i + 2;
-    if (nat[i] && nat[j] && nat[k])
-      thn[j] = th[j];
-  }
-  
-  for (i = 0; i < N-3; i++) {
-    j = i + 1;
-    k = i + 2;
-    l = i + 3;
-    if (nat[i] && nat[j] && nat[k] && nat[l]) {
-      phn[j] = ph[j];
-      tor[j] = 1;
-    }
-  }
-  
-  strcpy(str,TESTDIR);
-  strcat(str,"bonded_param");
-  strcat(str,fn);
-
-  fp1 = fopen(str,"w");
-  for (i = 0; i < NCH; i++) {
-    for (j = iBeg[i]; j <= iEnd[i]; j++) 
-      fprintf(fp1,"%3i %3i %10.5f %10.5f %10.5f %3i\n",i,j,
-	      bn[j],thn[j]*180./pi,phn[j]*180./pi,nat[j]);
-  }
-  fclose(fp1);
-  
-  return;
+  for (i = 0; i < N-1; i++)  bn[i] =  b[i];
+  for (i = 1; i < N-1; i++)  thn[i] = th[i];  
+  for (i = 1; i < N-2; i++)  phn[i][0] = phn[i][1] = phn[i][2] = ph[i];
 }
 /****************************************************************************/
+void read_disregs(char fn[],double *b,double p[][3],double kp[][3],int *dis) {
+  int i,j;
+  FILE *fp;
+
+  fp = fopen(fn,"r");
+  
+  if (NULL == fp) {
+    printf("<read_dis_regions> no data in %s\n",fn);
+    return;
+  }  
+
+  while (2 == fscanf(fp,"%i %i",&i,&j) && !feof(fp)) 
+    if (i >= 0 && i <= N-1 && j > 0) {
+      printf("<read_dis_regions> Setting res %i as disordered (%s)\n",i,fn);
+      dis[i] = j;
+    }
+
+  fclose(fp);  
+
+  for (i = 0; i < NCH; i++) {
+    for (j = iBeg[i]; j <= iEnd[i]; j++) {
+      if (dis[j] == 0) continue;
+
+      if (j >= iBeg[i] && j <= iEnd[i]-1) {
+	b[i] = 3.8;
+      }
+
+      if (j >= iBeg[i]+1 && j <= iEnd[i]-2) {
+	p[i][0] = phn_dis[0]*deg2rad;
+	p[i][1] = phn_dis[1]*deg2rad;
+	p[i][2] = phn_dis[2]*deg2rad;
+	kp[i][0] = kph_dis[0];
+	kp[i][1] = kph_dis[1];
+	kp[i][2] = kph_dis[2];
+      }
+    }
+  }
+
+}
+/****************************************************************************/
+void read_bonded_param(char *fn,double *b,double *t,double p[][3],
+		       double *kb,double *kt,double kp[][3]) {
+  int j;
+  char str[100];
+  FILE *fp;
+  
+  if ((fp = fopen(fn,"r")) == NULL) {
+    return;
+  }
+  
+  while (1 == fscanf(fp,"%d ",&j) && feof(fp) == 0) {
+
+    if (j < 0 || j > N-1) {
+      while (fgetc(fp) != '\n' && feof(fp) == 0);
+      continue;
+    }
+    
+    if ( 13 != fscanf(fp,"%s %lf %lf %s %lf %lf %s %lf %lf %lf %lf %lf %lf\n",
+		     str,&b[j],&kb[j],
+		     str,&t[j],&kt[j],
+		     str,&p[j][0],&p[j][1],&p[j][2],&kp[j][0],&kp[j][1],&kp[j][2]) )
+      continue;
+
+    printf("<read_bonded_param> (%s) %i bond %lf %lf angle %lf... (see logfile)\n",
+	   fn,j,b[j],kb[j],t[j]);
+    fprintf(fp_log,"<read_bonded_param> (%s) %i ",fn,j);
+    fprintf(fp_log,"bond %lf   %lf ",b[j],kb[j]);
+    fprintf(fp_log,"angle %lf   %lf ",t[j],kt[j]);
+    fprintf(fp_log,"tor %lf %lf %lf   %lf %lf %lf ",p[j][0],p[j][0],p[j][2],
+	    kp[j][0],kp[j][1],kp[j][2]);
+    fprintf(fp_log,"\n");
+    
+    t[j] *= deg2rad;
+    p[j][0] *= deg2rad;
+    p[j][1] *= deg2rad;
+    p[j][2] *= deg2rad;
+  }
+  
+  fclose(fp);
+}
+/****************************************************************************/
+void write_bonded_param(double *b,double *t,double p[][3],
+			double *kb,double *kt,double kp[][3],
+			char *dir,char *fn) {
+  int j;
+  char str[100];
+  FILE *fp;
+
+  strcpy(str,dir);
+  strcat(str,fn);
+
+  fp = fopen(str,"w");
+  for (j = 0; j < N; j++)  {
+    fprintf(fp,"%3i BOND  %8.6lf %8.6lf ",j,
+	    b[j],kb[j]);
+    fprintf(fp,"ANGLE %8.6lf %8.6lf ",
+	    t[j]*rad2deg,kt[j]);
+    fprintf(fp,"TORS  %8.6lf %8.6lf %8.6lf %8.6lf %8.6lf %8.6lf\n",
+	    p[j][0]*rad2deg,p[j][1]*rad2deg,p[j][2]*rad2deg,
+	    kp[j][0],kp[j][1],kp[j][2]);
+  }
+
+  fclose(fp); 
+}
+/****************************************************************************/  
 int relax_chains(int ich) {
   /* ich >= 0 : relax chain ich */
   /* ich <  0 : relax all chains */
@@ -791,34 +843,6 @@ void read_cont_param(char fn[],int ip1[],int ip2[],int npair,double kcont[]) {
   return ;
 }
 /****************************************************************************/
-void read_bonded_param(char fn[],
-		       double v1[],double k1[],
-		       double v2[],double k2[],
-		       double v3[],double k3[], double k4[]) {
-  int j;
-  char str[100];
-  FILE *fp;
-  
-  if ((fp = fopen(fn,"r")) != NULL) {
-    while (1 == fscanf(fp,"%d ",&j)) {
-
-      if (10 == fscanf(fp,"%s %lf %lf %s %lf %lf %s %lf %lf %lf\n",
-		      str,v1 + j,k1 + j,
-		      str,v2 + j,k2 + j,
-		      str,v3 + j,k3 + j,k4 + j) && j >= 0 && j <= N-1) {
-	printf("<read_bonded_param> (%s) %i bond %lf %lf bend %lf %lf tor %lf %lf %lf \n",
-	       fn,j,
-	       v1[j],k1[j],
-	       v2[j],k2[j],
-	       v3[j],k3[j],k4[j]);
-      } else
-	printf("<read_param> (%s) read error\n",fn);
-    }
-  } 
-
-  return ;
-}
-/****************************************************************************/
 /***** INITIALIZATION *******************************************************/
 /****************************************************************************/
 void init(int iflag) {
@@ -826,7 +850,7 @@ void init(int iflag) {
   double vxsum,vysum,vzsum,vxcsum,vycsum,vzcsum;
   double c0,c0cr;
   double o[NOBS];
-  char c;
+  char c,str[100];
   FILE *fp1;
 
   /* read sequence */
@@ -905,8 +929,6 @@ void init(int iflag) {
   printf("<init> Creating directory %s\n",CHECKDIR);
   mkdir(CHECKDIR, 0777);
 
-  char str[100];
-  
   strcpy(str,OUTDIR);
   strcat(str,LOGFILE);
   printf("<init> Opening logfile (%s)\n",str);
@@ -917,6 +939,8 @@ void init(int iflag) {
   pi=acos(-1.);
   pi2=2.*pi;
   pid2=pi/2.;
+  deg2rad=pi/180.;
+  rad2deg=180./pi;
   cthmin=cos(pi/90.);
   sthmin=sin(pi/90.);
 
@@ -924,18 +948,16 @@ void init(int iflag) {
 
   kbon*=eps;
   kth*=eps;
-  kph1*=eps;
-  kph3*=eps;
+  kph[0]*=eps;
+  kph[1]*=eps;
+  kph[2]*=eps;
   kcon*=eps;
-  khp*=eps;
   krep*=eps;
-  epsilonrep*=eps;
   eclash*=eps;
-  
-  kcon60 = kcon * 60;
-  krep12 = krep * 12;
-  kbon2 = kbon * 2;
-  kth2 = kth * 2;
+  thn_disa*=deg2rad;
+  thn_disb*=deg2rad;
+  ksi_disa*=ksi_disa*deg2rad*deg2rad;
+  ksi_disb*=ksi_disb*deg2rad*deg2rad;
 
   /* set temperatures */
   
@@ -952,7 +974,7 @@ void init(int iflag) {
   c1=dt*dt/ (2.*mbd);
   c2=(1-c0)*(1-c0+c0*c0);
   c3=dt*(1-c0+c0*c0) / (2.*mbd);
-
+  
   /************ Crowders **************/
   mcr = 4 * (rcrowd/8.) * (rcrowd/8.);
   gamcr = (0.025/tau) * (8./rcrowd);
@@ -979,31 +1001,27 @@ void init(int iflag) {
 
   /* native structures */
 
-  if ( (nnat1 = read_native(NATIVE,xnat,ynat,znat,nat)) > 0) 
+  if ( (nnat1 = read_native(NATIVE,xnat,ynat,znat)) > 0) 
     printf("<init> NATIVE: Read %i residue positions (%s)\n",nnat1,NATIVE);
   else
     printf("<init> NATIVE: No data (%s)\n",NATIVE);
 
-  if ( (nnat2 = read_native(NATIVE2,xnat2,ynat2,znat2,nat2)) > 0) 
+  if ( (nnat2 = read_native(NATIVE2,xnat2,ynat2,znat2)) > 0) 
     printf("<init> NATIVE2: Read %i residue positions (%s)\n",nnat2,NATIVE2);
   else
     printf("<init> NATIVE2: No data (%s)\n",NATIVE2);
 
   /* contact observables */
 
-  npair = npair2 = spair = 0;
-  npair3 = npair4 = npair5 = 0;
-  ndpair = 0;
-  for (m = 0; m < MAXP; m++) {
-    ip1[m] = ip2[m] = ip3[m] = ip4[m] = ip5[m] = ip6[m] = ip7[m] = ip8[m] = ip9[m] = ip10[m] = 0;
-    id1[m] = id2[m] = 0;
-  }
-  for (i=0; i < N; i++) for (j = 0;j < N; j++) cc[i][j] = 0;  
-  for (m=0; m < MAXP; m++) dual1[m] = dual2[m] = 0;    
+  npair = npair2 = spair = ndpair = 0;
+  for (m = 0; m < MAXP; m++) 
+    ip1[m] = ip2[m] = ip3[m] = ip4[m] = id1[m] = id2[m] = 0;
+  for (i = 0; i < N; i++) for (j = 0;j < N; j++) cc[i][j] = 0;  
+  for (m = 0; m < MAXP; m++) dual1[m] = dual2[m] = 0;    
 
   npair = read_contacts(CONTMAP,ip1,ip2);
   if (npair > 0) {
-    printf("<init> CONTMAP: Read %i contacts (%s)\n",npair, CONTMAP);
+    printf("<init> CONTMAP: Read npair=%i contacts (%s)\n",npair, CONTMAP);
     printf("<init> CONTMAP: ");
     get_natdist(distp,distp2,ip1,ip2,npair,xnat,ynat,znat);
     printf("<init> CONTMAP: Writing to %s\n","cmap.out");
@@ -1012,57 +1030,32 @@ void init(int iflag) {
 
   npair2 = read_contacts(CONTMAP2,ip3,ip4);
   if (npair2 > 0) {
-    printf("<init> CONTMAP2: Read %i contacts  (%s)\n",npair2, CONTMAP2);
+    printf("<init> CONTMAP2: Read npair2=%i contacts  (%s)\n",npair2, CONTMAP2);
     printf("<init> CONTMAP2: ");
     get_natdist(distp3,distp4,ip3,ip4,npair2,xnat2,ynat2,znat2);
     printf("<init> CONTMAP2: Writing to %s\n","cmap2.out");
     write_natdist("cmap2.out",distp3,npair2,ip3,ip4);
   } else printf("<init> CONTMAP2: No data (%s)\n",CONTMAP2);
 
-  npair3 = read_contacts(CONTMAP3,ip5,ip6);
-  if (npair3 > 0) {
-    printf("<init> CONTMAP3: Read %i contacts (%s)\n",npair3, CONTMAP3);
-    printf("<init> CONTMAP3: ");
-    get_natdist(distp5,distp6,ip5,ip6,npair3,xnat,ynat,znat);
-    printf("<init> CONTMAP3: Writing to %s\n","cmap3.out");
-    write_natdist("cmap3.out",distp5,npair3,ip5,ip6);
-  } else printf("<init> CONTMAP3:  No data (%s)\n",CONTMAP3);
-
-  npair4 = read_contacts(CONTMAP4,ip7,ip8);
-  if (npair4 > 0) {
-    printf("<init> CONTMAP4: Read %i contacts  (%s)\n",npair4, CONTMAP4);
-    printf("<init> CONTMAP4: ");
-    get_natdist(distp7,distp8,ip7,ip8,npair4,xnat,ynat,znat);
-    printf("<init> CONTMAP4: Writing to %s\n","cmap4.out");
-    write_natdist("cmap4.out",distp7,npair4,ip7,ip8);
-  } else printf("<init> CONTMAP4: No data (%s)\n",CONTMAP4);
-
-  if (FF_DISULF > 0) {
-    double dist_dummy[MAXP];
-     printf("<init> DISULFIDE: FF_DISULF %i\n",FF_DISULF);
-    ndpair = read_contacts(DISULFIDE,id1,id2);
-    if (ndpair > 0) {
-      printf("<init> DISULFIDE: Read %i contacts  (%s)\n",ndpair, DISULFIDE);
-      printf("<init> DISULFIDE: ");
-      get_natdist(distd1,dist_dummy,id1,id2,ndpair,xnat,ynat,znat);
-      printf("<init> DISULFIDE: Writing to %s\n","cmap_disulf.out");
-      write_natdist("cmap_disulf.out",distd1,ndpair,id1,id2);
-      if (FF_DISULF > 1) {
-	printf("<init> DISULFIDE: ");
-	get_natdist(distd2,dist_dummy,id1,id2,ndpair,xnat2,ynat2,znat2);
-	printf("<init> DISULFIDE: Writing to %s\n","cmap_disulf2.out");
-	write_natdist("cmap_disulf2.out",distd2,ndpair,id1,id2);
-      }
-    } 
+  ndpair = read_contacts(DISULFIDE,id1,id2);
+  if (ndpair > 0 && FF_DISULF > 0) {
+    double fdum[MAXP];
+    printf("<init> DISULFIDE: Read ndpair=%i contacts  (%s)\n",ndpair, DISULFIDE);
+    get_natdist(distd1,fdum,id1,id2,ndpair,xnat,ynat,znat);
+    printf("<init> DISULFIDE: Writing to %s\n","cmap_disulf.out");
+    write_natdist("cmap_disulf.out",distd1,ndpair,id1,id2);
+    if (FF_DISULF == 2) {
+      get_natdist(distd2,fdum,id1,id2,ndpair,xnat2,ynat2,znat2);
+      printf("<init> DISULFIDE: Writing to %s\n","cmap_disulf2.out");
+      write_natdist("cmap_disulf2.out",distd2,ndpair,id1,id2);
+    }
   }
-  
+
   if (npair  > MAXP) {printf("npair too big\n"); exit(-1);}
   if (npair2 > MAXP) {printf("npair2 too big\n"); exit(-1);}
-  if (npair3 > MAXP) {printf("npair3 too big\n"); exit(-1);}
-  if (npair4 > MAXP) {printf("npair4 too big\n"); exit(-1);}
   if (ndpair > MAXP) {printf("ndpair too big\n"); exit(-1);}
 
-  /* contact interactions */
+  /* NON-BONDED INTERACTIONS */
 
   if (FF_CONT > 0) {
     for (m = 0; m < npair; m++) kcon_nat1[m] = kcon;
@@ -1088,33 +1081,30 @@ void init(int iflag) {
     correct_dist(ip3,ip4,npair2,distp4,dist_rep2,dual2,xnat,ynat,znat);
   }
 
-  /* contact parameters from file */  
+  /* parameters from file */  
 
   read_cont_param(CONTPAR,ip1,ip2,npair,kcon_nat1);
   read_cont_param(CONTPAR2,ip3,ip4,npair2,kcon_nat2);
 
-  /* bonded interactions */
-
-  /* default */   
-
-  for (i = 0; i < N-1; i++) bn[i] = bn2[i] = 3.8;
-  for (i = 1; i < N-1; i++) thn[i] = thn2[i] = 120.0 * pi / 180.0; 
-  for (i = 1; i < N-2; i++) phn[i] = phn2[i] = 120.0 * pi / 180.0;
-
-  /* reference values from native structure */
+  /* BONDED INTERACTIONS */
   
-  if (nnat1 > 0) get_bonded_param(bn,thn,phn,xnat,ynat,znat,nat,tor,"_nat.out");
-  if (nnat2 > 0) get_bonded_param(bn2,thn2,phn2,xnat2,ynat2,znat2,nat2,tor2,"_nat2.out");
+  set_bonded_param(bn,thn,phn,kbond,kbend,ktor,xnat,ynat,znat,nnat1);
+  set_bonded_param(bn2,thn2,phn2,kbond2,kbend2,ktor2,xnat2,ynat2,znat2,nnat2);
 
-  /* default strengths */
-  
-  set_bonded_strength(kbond,kbend,ktor1,ktor3,nat);
-  set_bonded_strength(kbond2,kbend2,ktor1_2,ktor3_2,nat2);
+  /* disordered regions from file */
+
+  read_disregs(DISREG1,bn,phn,ktor,dis);
+  read_disregs(DISREG2,bn2,phn2,ktor2,dis2);
 
   /* bonded parameters from file */  
 
-  read_bonded_param(BONDEDPAR,bn,kbond,thn,kbend,phn,ktor1,ktor3);
-  read_bonded_param(BONDEDPAR2,bn2,kbond2,thn2,kbend2,phn2,ktor1_2,ktor3_2);
+  read_bonded_param(BONDEDPAR,bn,thn,phn,kbond,kbend,ktor);
+  read_bonded_param(BONDEDPAR2,bn2,thn2,phn2,kbond2,kbend2,ktor2);
+
+  /* write bonded parameters */
+
+  write_bonded_param(bn,thn,phn,kbond,kbend,ktor,TESTDIR,"bonded_param_1");
+  write_bonded_param(bn2,thn2,phn2,kbond2,kbend2,ktor2,TESTDIR,"bonded_param_2");
 
   /* initialize functions */
   
@@ -1126,7 +1116,6 @@ void init(int iflag) {
   torsion(-1);
   exvol(-1);
   cont(-1);
-  hp(-1);
 
   read_conf(-1,"","");
   histo_bond(-1);
@@ -1136,36 +1125,35 @@ void init(int iflag) {
   histo_cont1(-1,0,0);
   histo_cont2(-1,0,0);
 
-  printf("<init> npair %d npair2 %d npair3 %d npair4 %d npair5 %d \n",npair,npair2,npair3,npair4,npair5);
-
   /* initial chain configuration  */  
 
-  int idum[N];
+  if (ISTART == 0) {            /* native */
 
-  if (ISTART == 0) {  /* native */
     printf("<init> Initializing chain(s) from NATIVE %s\n",NATIVE);
-    for (i = 0; i < N; i++) {
-      x[i] = xnat[i];
-      y[i] = ynat[i];
-      z[i] = znat[i];
-    }
+    for (i = 0; i < N; i++) {x[i] = xnat[i]; y[i] = ynat[i]; z[i] = znat[i];}
     if (1 != cart2dof()) printf("Error initial configuration");
+
   } else if (ISTART == 1) {     /* read */
+
     printf("<init> Initializing chain(s) from START %s\n",START);
-    if (N != read_native(START,x,y,z,idum)) printf("Error initial configuration 1\n");
+    read_native(START,x,y,z);
     if (1 != cart2dof()) printf("Error initial configuration 2\n");
+
   } else if (ISTART == 2) {     /* random */
+
     printf("<init> Initializing chain(s) from random configuration\n");
     for (i = 0; i < N-1; i++) b[i]  =  bn[i] ;
     for (i = 1; i < N-1; i++) th[i] =  thn[i] ;
     for (i = 1; i < N-2; i++) ph[i] =  pi * (2 * ran3n(&seed) - 1);
     dof2cart(0);
     relax_chains(-1);
+
   } else {
     printf("\nInvalid ISTART\n");
     exit(-1);
   }
-  /* Initial conformation of crowders (random) */
+
+  /* Initial crowder positions (random) */
   
   for (i = 0; i < NCR; i++){
     xcr[i] = BOX * ran3n(&seed);
@@ -1175,6 +1163,8 @@ void init(int iflag) {
   
   relax_crowders();
 
+  /* initialize velocities */
+  
   vxsum=vysum=vzsum=0;
   for (i=0;i<N;i++) {
     vx[i]=sqrt(1/beta[ind]/mbd)*gasdev2();
@@ -1215,7 +1205,7 @@ void init(int iflag) {
   for (i = 0; i<N; i++) fx[i]=fy[i]=fz[i]=0;
   for (i = 0; i < NCR; i++) fxc[i]=fyc[i]=fzc[i]=0;
     Epot=(Ebon=bond(0))+(Eben=bend(0))+(Erep=exvol(0))+(Etor=torsion(0))+
-      (Econ=cont(0))+(Ehp=hp(0))+(Ecc = crowd_crowd(0))+(Ecb = crowd_bead(0));
+      (Econ=cont(0))+(Ecc=crowd_crowd(0))+(Ecb=crowd_bead(0));
 
   for (i=0;i<NCR;i++) {
     frcdx[i] = gasdev2() * tconstcr[ind];
@@ -1231,7 +1221,7 @@ void init(int iflag) {
 
   if (!FANALYS && read_checkpnt()) return ;
 
-  printf("<init> saving initial conformation to %s\n","_start.pdb");
+  printf("<init> writing initial conformation to %s\n","_start.pdb");
   dumppdb("_start.pdb",o,0);
 
   printf("\n");
@@ -1239,9 +1229,9 @@ void init(int iflag) {
   printf("  Ekin %f Epot %f\n",Ekin,Epot);
   printf("  Ebon %f Eben %f Erep %f Etor %f Econ %f Econ1 %lf Econ2 %lf Ecorr %lf\n",
 	 Ebon,Eben,Erep,Etor,Econ,Econ1,Econ2,Ecorr);
-  printf("  Ehp %f Ecc %f Ecb %f\n",Ehp, Ecc, Ecb);
+  printf("  Ecc %f Ecb %f\n",Ecc,Ecb);
 
-  /* print energy functions */
+  /* write energy potential functions to file */
   
   bond(1);
   bend(1);

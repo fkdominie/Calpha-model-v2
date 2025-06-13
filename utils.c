@@ -13,7 +13,7 @@ double xcro[NCR], ycro[NCR], zcro[NCR];  /* Back up for crowders coordinates*/
 /****************************************************************************/
 /***** input/output *********************************************************/
 /****************************************************************************/
-int read_native(char *fn,double *xr,double *yr,double *zr,int *nat) {
+int read_native(char *fn,double *xr,double *yr,double *zr) {
   int j, n = 0;
   double tmpx,tmpy,tmpz;
   FILE *fp1;
@@ -26,7 +26,6 @@ int read_native(char *fn,double *xr,double *yr,double *zr,int *nat) {
       continue;
     }
     xr[j] = tmpx; yr[j] = tmpy; zr[j] = tmpz;
-    nat[j] = 1;
     ++n;
   }    
 

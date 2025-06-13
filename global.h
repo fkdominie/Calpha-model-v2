@@ -12,6 +12,7 @@ extern double boxhf;
 extern int iBeg[],iEnd[];
 extern int a2c[];
 extern const double vbox;
+extern int seq[];                   
 /************* energies and forces ******************************************/
 extern double Ekin,Epot,Eben,Ebon,Erep;  
 extern double Etor,Econ,Ehp;
@@ -38,39 +39,28 @@ extern long int nflp,accflp;
 extern const double eps;          
 extern double kbon;             
 extern double kth;               
-extern double kph1;               
-extern double kph3;               
+extern double kph[3];               
 extern double kcon;               
-extern double khp;                
-extern double kmut;               
 extern double krep;               
 extern double sigsa;              
 extern double cut;                
 extern double sighp;              
 extern double cuthp;
 extern double ksi1,ksi2;
-extern double kcon60,krep12,kbon2,kth2;
+extern double thn_disa,thn_disb,ksi_disa,ksi_disb;
+extern double phn_dis[];
+extern double kph_dis[];
 /************* native structure *********************************************/
 extern double xnat[],ynat[],znat[];
 extern double xnat2[],ynat2[],znat2[];
-extern double xnat3[],ynat3[],znat3[];
-extern double xnat4[],ynat4[],znat4[];
-extern double xnat5[],ynat5[],znat5[];
-extern double bn[],thn[],phn[];       
-extern double bn2[],thn2[],phn2[];
-extern int nat[],nat2[];
-extern int tor[],tor2[];
-extern int npair,npair2,npair3,npair4,npair5;
+extern double bn[],thn[],phn[][3];       
+extern double bn2[],thn2[],phn2[][3];
+extern int npair,npair2;
 extern int ndpair;
-extern int qpair;                   
 extern int spair;                   
 extern int ip1[],ip2[];        
 extern int ip3[],ip4[];
-extern int ip5[], ip6[];
-extern int ip7[], ip8[];
-extern int ip9[], ip10[];
-extern int id1[], id2[];
-extern int iq1[],iq2[];
+extern int id1[],id2[];
 extern int mc1[],mc2[];
 extern int nni1[],nnj1[];
 extern int nni2[],nnj2[];
@@ -81,32 +71,26 @@ extern int nat1[],nat2[],nat3[],nat4[],nat5[];
 extern int link[];
 extern double kcon_nat1[];     
 extern double kcon_nat2[];       
-extern double kbond[],kbond2[];  
-extern double kbend[],kbend2[];  
-extern double ktor1[],ktor3[];   
-extern double ktor1_2[],ktor3_2[];
+extern double kbond[],kbond2[];
+extern double kbend[],kbend2[];
+extern double ktor[][3],ktor2[][3];
+extern int dis[],dis2[];
 extern double distp[];           
 extern double distp2[];          
 extern double distp3[];           
 extern double distp4[];
-extern double distp5[];
-extern double distp6[];
-extern double distp7[];
-extern double distp8[];
 extern double distd1[]; 
 extern double distd2[]; 
 extern double dist_rep1[];
 extern double dist_rep2[];
 extern double distg1[],distg2[];
 extern double distg3[],distg4[];
-extern double iqkap[];
 extern short cc[][N];
 /************* Crowders *****************************************************/
 extern double Ecc, Ecb;                        /* Energy terms related to the crowders */
 extern const double rcrowd;                   /* radius of crowders  */
 extern const double Phicr;                    /*  Volume fraction of crowders */
 extern const double srefcr;                  /*  Coefficient of softness  */
-extern double epsilonrep;                 /*  Strength of crowding interactions repulsion */
 extern double eclash;    
 extern double fxc[],fyc[],fzc[];          /* conformational force crowders                 */
 extern double fxco[],fyco[],fzco[];       /* conformational force old crowders             */
@@ -117,11 +101,9 @@ extern double mcr;                       /* Mass of crowders                    
 extern double gamcr;
 extern double c1cr,c2cr,c3cr;
 extern double tconstcr[];
-/************* sequence effects *********************************************/
-extern int seq[];                   
-extern double kap[];
 /************* miscellaneous ************************************************/
-extern double pi,pi2,pid2;       
+extern double pi,pi2,pid2;
+extern double deg2rad,rad2deg;
 extern double cthmin,sthmin;
 extern int carterr,therr;
 extern long seed,orig_seed;
@@ -134,7 +116,6 @@ void printinfo(void);
 void ramachan(char *fn,double b,double th,double ph);
 void runtime(long it,double o[]);
 void averages(double so[][NOBS]);
-//void heat_capacity(char *fn,double e,double e2,int n);
 void write_conf(char *fn,char *fdir,char *fmode);
 void write_momenta(char *fn,char *fdir,char *fmode);
 void write_forces(char *fname,char *fdir,char *fmode);
@@ -156,11 +137,9 @@ void get_nndist(double *distg1,double *distg2,
 		int *nni1,int *nnj1,int *nni2,int *nnj2,
 		double *xn,double *yn,double *zn);
 void write_natdist(char *fn,double *dist,int n,int *ip1,int *ip2);
-void set_bonded_strength(double *kbond,double *kbend,double *ktor1,double *ktor3,
-			 int *nat);
-void get_bonded_param(double *bn,double *thn,double *phn,
-		      double *xnat,double *ynat,double *znat,
-		      int *nat,int *tor,char *fn);
+void write_bonded_param(double *bn,double *thn,double phn[][3],
+			double *kbond,double *kbend,double ktor[][3],
+			char *dir,char *fn);
 int relax_chains(int ich);
 int relax_crowders(void);
 void init(int iflag);
@@ -200,9 +179,6 @@ void histo_contmap(int iflag, int ind);
 void histo_contmap2(int iflag, int ind);
 int no_cont(void);
 int no_cont2(void);
-int no_cont3(void);
-int no_cont4(void);
-int no_cont5(void);
 /* sampling */
 void tflip(double e);
 void mdstep(void);
@@ -218,7 +194,7 @@ void cr2box(int icr);
 void dof2cart(int iflag);
 int cart2dof(void);
 /* utils.c */
-int read_native(char *fn,double *xr,double *yr,double *zr,int *nat);
+int read_native(char *fn,double *xr,double *yr,double *zr);
 int read_contacts(char *fn,int *ip1,int *ip2);
 void dumppdb(char *fn,double *o,int nobs);
 double rmsd_calc(double *x1,double *y1,double *z1,
