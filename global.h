@@ -39,7 +39,8 @@ extern long int nflp,accflp;
 extern const double eps;          
 extern double kbon;             
 extern double kth;               
-extern double kph[3];               
+extern double kph1;
+extern double kph3;
 extern double kcon;               
 extern double krep;               
 extern double sigsa;              
@@ -48,13 +49,14 @@ extern double sighp;
 extern double cuthp;
 extern double ksi1,ksi2;
 extern double thn_disa,thn_disb,ksi_disa,ksi_disb;
-extern double phn_dis[];
-extern double kph_dis[];
+extern double phn_dis1,phn_dis2,phn_dis3;
+extern double kph_dis1,kph_dis2,kph_dis3;
+extern double eth0,eph0,fscal;
 /************* native structure *********************************************/
 extern double xnat[],ynat[],znat[];
 extern double xnat2[],ynat2[],znat2[];
-extern double bn[],thn[],phn[][3];       
-extern double bn2[],thn2[],phn2[][3];
+extern double bn[],thn[],phn[];       
+extern double bn2[],thn2[],phn2[];
 extern int npair,npair2;
 extern int ndpair;
 extern int spair;                   
@@ -137,9 +139,7 @@ void get_nndist(double *distg1,double *distg2,
 		int *nni1,int *nnj1,int *nni2,int *nnj2,
 		double *xn,double *yn,double *zn);
 void write_natdist(char *fn,double *dist,int n,int *ip1,int *ip2);
-void write_bonded_param(double *bn,double *thn,double phn[][3],
-			double *kbond,double *kbend,double ktor[][3],
-			char *dir,char *fn);
+void write_bonded_param(double *bn,double *thn,double *phn,char *fn);
 int relax_chains(int ich);
 int relax_crowders(void);
 void init(int iflag);

@@ -23,8 +23,8 @@ double frcdxo[NCR],frcdyo[NCR],frcdzo[NCR]; /* random force crowders, old   */
 /************* native structure *********************************************/
 double xnat[N],ynat[N],znat[N];    /* native 1 structure                    */
 double xnat2[N],ynat2[N],znat2[N]; /* native 2 structure                    */
-double bn[N],thn[N],phn[N][3];     /* native 1 reference values             */
-double bn2[N],thn2[N],phn2[N][3];  /* native 2 reference values             */
+double bn[N],thn[N],phn[N];        /* native 1 reference values             */
+double bn2[N],thn2[N],phn2[N];     /* native 2 reference values             */
 int npair;                         /* # native contacts                     */
 int npair2;                        /* # native contacts                     */
 int ndpair;
@@ -40,9 +40,6 @@ int nni4[MAXP],nnj4[MAXP];
 int dual1[MAXP],dual2[MAXP];       /* shared contacts                       */
 double kcon_nat1[MAXP];            /* contact strengths                     */
 double kcon_nat2[MAXP];            /* contact strengths                     */
-double kbond[N],kbond2[N];         /* bond energy strength                  */ 
-double kbend[N],kbend2[N];         /* bend energy strength                  */ 
-double ktor[N][3],ktor2[N][3];     /* tors energy strength                  */ 
 int dis[N],dis2[N];                /* 1, disordered region, 0 otherwise     */
 /******************/
 double distp[MAXP];                /* distances                             */
@@ -68,10 +65,11 @@ void log_sum_merge(double e1, double e2, double *e,
 		   double f1, double f2, double *f,
 		   double bet);
 void crowd_ecalc(double *e, double *f,double r2,double sigma,double rho);
-void bond_ecalc(double *e,double *f,double db,double kbon);
-void bend_ecalc(double *e,double *f,double th,double thn,double kth);
-void bend_ecalc_dis(double *e,double *f,double t);
-void tors_ecalc(double *e,double *f,double x,double *xr,double *k);
+void bond_ecalc(double *e,double *f,double db);
+void bend_ecalc_dis(double *e,double *f,double dtha,double dthb);
+void bend_ecalc(double *e,double *f,double dth);
+void tors_ecalc_dis(double *e,double *f,double phval);
+void tors_ecalc(double *e,double *f,double dph);
 void cont_rep_ecalc(double *e,double *f,double r2,double sig2,double kcont);
 void cont_att_ecalc(double kstr,double r,
 		    double *eg,double *eg1,double *eg2,
@@ -136,9 +134,9 @@ double crowd_crowd(int iflag){
   double e = 0,fcc = 0,ecc = 0;                 /* To calculate force and energy between crowders */
   static double sigma,rho,rcut,rcut2,Dlim,Dlim2;/* To apply limitations and ecalsh penalty */
   FILE *fp;
-  
-  
-   if (NCR == 0) return 0;
+    
+  if (NCR == 0)
+    return 0;
 
   if (iflag < 0) {
     rho = rcrowd + rcrowd; // range crowder-crowder interaction
@@ -302,7 +300,7 @@ double crowd_bead(int iflag){
   return 0;
 }   
 /****************************************************************************/
-void bond_ecalc(double *e,double *f,double db,double kbon) {
+void bond_ecalc(double *e,double *f,double db) {
   
   (*e) = kbon * db * db;
   (*f) = - kbon * 2 * db;
@@ -313,13 +311,13 @@ void bond_ecalc(double *e,double *f,double db,double kbon) {
 double bond(int iflag) {
   int i,j,k;
   double fb,fb1 = 0,fb2 = 0;
-  //  double fbx,fby,fbz,fb,fb1 = 0,fb2 = 0;
-  double e = 0,e1 = 0,e2 = 0,et,db,db2,bb,r;
+  double e = 0,e1 = 0,e2 = 0,et,bb,db,db2,r;
   double dx,dy,dz;
   static double bet=10.0;
   FILE *fp;
 
-  if (FF_BOND == 0) return 0;
+  if (FF_BOND == 0)
+    return 0;
 
   if (iflag < 0) {
     printf("<bond> bet %lf\n",bet);
@@ -331,12 +329,19 @@ double bond(int iflag) {
     for (k = 0; k < NCH; ++k) {
       for (i = iBeg[k]; i < iEnd[k]; ++i) {
 	j = i + 1;
-	db = b[i] - bn[i];	
-	bond_ecalc(&et,&fb,db,kbond[i]);
+
+	switch (dis[i]) {
+	case 1  : {bond_ecalc(&et,&fb,b[i]-bn_dis); break;}
+	default : {bond_ecalc(&et,&fb,b[i]-bn[i]); break;}
+	}
 	
 	if (FF_BOND == 2) {
-	  db2 = b[i] - bn2[i];
-	  bond_ecalc(&e2,&fb2,db2,kbond2[i]);
+
+	  switch (dis2[i]) {
+	  case 1  : {bond_ecalc(&e2,&fb2,b[i]-bn_dis); break;}
+	  default : {bond_ecalc(&e2,&fb2,b[i]-bn2[i]); break;}
+	  }
+
 	  log_sum_merge(e1=et,e2,&et,fb1=fb,fb2,&fb,bet);
 	}
 
@@ -352,11 +357,11 @@ double bond(int iflag) {
 	i = id1[k]; j = id2[k];
 	
 	db = (r = sqrt(vec2(i,j,&dx,&dy,&dz))) - distd1[k];
-	bond_ecalc(&et,&fb,db,kbon);
+	bond_ecalc(&et,&fb,db);
 	
 	if (FF_DISULF == 2) {
 	  if ( db * (db2 = r - distd2[k]) < 0 ) continue;
-	  if ( db * (db2 - db) < 0 ) bond_ecalc(&et,&fb,db2,kbon);
+	  if ( db * (db2 - db) < 0 ) bond_ecalc(&et,&fb,db2);
 	}
 	
 	e += et;
@@ -375,20 +380,27 @@ double bond(int iflag) {
       for (i = iBeg[k]; i < iEnd[k]; ++i) {
     
 	for (bb=3.0; bb<5.0; bb+=0.01) {
-	  db = bb - bn[i];
-	  bond_ecalc(&e1,&fb1,db,kbond[i]);
-	  
+
+	  switch (dis[i]) {
+	  case 1  : {bond_ecalc(&e1,&fb1,bb-bn_dis); break;}
+	  default : {bond_ecalc(&e1,&fb1,bb-bn[i]); break;}
+	  }	  
+
 	  if (FF_BOND == 2) {
-	    db2 = bb - bn2[i];
-	    bond_ecalc(&e2,&fb2,db2,kbond2[i]);
+
+	    switch (dis2[i]) {
+	    case 1  : {bond_ecalc(&e2,&fb2,bb-bn_dis); break;}
+	    default : {bond_ecalc(&e2,&fb2,bb-bn2[i]); break;}
+	    }
+
 	    log_sum_merge(e1,e2,&et,fb1,fb2,&fb,bet);
 
-	    fprintf(fp,"%i %i %lf  %lf %lf %lf  %lf %lf %lf\n",
-		    k,i,bb,e1,e2,et,fb1,fb2,fb);
+	    fprintf(fp,"%i %lf  %lf %lf %lf  %lf %lf %lf\n",
+		    i,bb,e1,e2,et,fb1,fb2,fb);
 	    continue;
 	  }
 
-	  fprintf(fp,"%i %i %lf  %lf %lf\n",k,i,bb,e1,fb1);
+	  fprintf(fp,"%i %lf  %lf %lf\n",i,bb,e1,fb1);
 	}
       }
     }
@@ -400,26 +412,25 @@ double bond(int iflag) {
   return 0;
 }
 /****************************************************************************/
-void bend_ecalc_dis(double *e,double *f,double t) {
+void bend_ecalc_dis(double *e,double *f,double dtha,double dthb) {
   /* Potential V(x) = -ln[ exp(-(x-ta)^2/(2ka^2) + exp(-(x-tb)^2/(2kb^2) ]  
-     where ta,tb are reference values and ka,kb are parameters.  Returns
-     (*e) = V(x) and (*f) = - V'(x) */
-  double da = t - thn_disa;
-  double db = t - thn_disb;
+     where ta,tb are reference values and ka,kb are parameters. V(x) is
+     shifted by an energy eth0. Returns (*e) = V(x) and (*f) = - V'(x) */
 
-  double da2 = da * da;
-  double db2 = db * db;
-
-  double ga = exp( -da2 / 2. / ksi_disa );
-  double gb = exp( -db2 / 2. / ksi_disb );
+  double ga,gb;
+  
+  dtha /= ksi_disa;
+  dthb /= ksi_disb;
+  
+  ga = exp( - dtha * dtha / 2 );
+  gb = exp( - dthb * dthb / 2 );
     
-  (*e) = - eps * log(ga + gb);
-  (*f) = - eps * (da / ksi_disa * ga + db / ksi_disb * gb) / (ga + gb);  
+  (*e) = - eps * log(ga + gb) + eth0; 
+  (*f) = - eps * (dtha / ksi_disa * ga + dthb / ksi_disb * gb) / (ga + gb);  
 }
 /****************************************************************************/
-void bend_ecalc(double *e,double *f,double th,double thn,double kth) {
-  double dth = th - thn;
-  
+void bend_ecalc(double *e,double *f,double dth) {
+
   (*e) = kth * dth * dth;
   (*f) = - kth * 2 * dth;
 }
@@ -449,19 +460,19 @@ double bend(int iflag) {
       for (i=iBeg[l]; i<iEnd[l]-1; ++i) {
 	j = i + 1;
 	k = i + 2;
-
-	if (dis[j])
-	  bend_ecalc_dis(&et,&fben,th[j]);
-	else
-	  bend_ecalc(&et,&fben,th[j],thn[j],kbend[j]);
-	  
+	
+	switch (dis[j]) {
+	case 1  : {bend_ecalc_dis(&et,&fben,th[j]-thn_disa,th[j]-thn_disb); break;}
+	default : {bend_ecalc(&et,&fben,th[j]-thn[j]); break;}
+	}
+	
 	if (FF_BEND == 2) {
 
-	  if (dis2[j])
-	    bend_ecalc_dis(&e2,&fben2,th[j]);
-	  else 
-	    bend_ecalc(&e2,&fben2,th[j],thn2[j],kbend2[j]);
-
+	  switch (dis2[j]) {
+	  case 1  : {bend_ecalc_dis(&e2,&fben2,th[j]-thn_disa,th[j]-thn_disb); break;}
+	  default : {bend_ecalc(&e2,&fben2,th[j]-thn2[j]); break;}
+	  }
+	  
 	  log_sum_merge(e1=et,e2,&et,fben1=fben,fben2,&fben,bet);
 	}
 	
@@ -516,18 +527,18 @@ double bend(int iflag) {
 
 	for (d = 0; d < pi; d += pi/180) {
 
-	  if (dis[j])
-	    bend_ecalc_dis(&e1,&fben1,d);
-	  else
-	    bend_ecalc(&e1,&fben1,d,thn[j],kbend[j]);
+	  switch (dis[j]) {
+	  case 1  : {bend_ecalc_dis(&e1,&fben1,d-thn_disa,d-thn_disb); break;}
+	  default : {bend_ecalc(&e1,&fben1,d-thn[j]); break;}
+	  }
 	  
 	  if (FF_BEND == 2) {
 
-	    if (dis2[j])
-	      bend_ecalc_dis(&e2,&fben2,d);
-	    else 
-	      bend_ecalc(&e2,&fben2,d,thn2[j],kbend2[j]);
-
+	    switch (dis2[j]) {
+	    case 1  : {bend_ecalc_dis(&e2,&fben2,d-thn_disa,d-thn_disb); break;}
+	    default : {bend_ecalc(&e2,&fben2,d-thn2[j]); break;}
+	    }
+	    
 	    log_sum_merge(e1,e2,&et,fben1,fben2,&fben,bet);
 
 	    fprintf(fp,"%i %lf  %lf %lf %lf  %lf %lf %lf\n",j,d*rad2deg,e1,e2,et,
@@ -546,16 +557,28 @@ double bend(int iflag) {
   return 0;
 }
 /****************************************************************************/
-void tors_ecalc(double *e,double *f,double x,double *xr,double *k) {
-  /* Potential function V(x) =  k1*(1-cos(x-x1)) + k2*(1-cos(2*(x-x2))) +   */
-  /* k3*(1-cos(3*(x-x3))), where x1,x2,x3 are reference values and k1,k2,k3 */
-  /* are strength parameters. Returns (*e) = V(x) and (*f) = -V'(x).        */
+void tors_ecalc_dis(double *e,double *f,double phval) {
+  /* V(x) = k1(1-cos(dph)) + k2(1-cos(2dph)) + k3(1-cos(3dph)) shifted and
+     scaled. */
 
-  double k1 = k[0],k2 = k[1],k3 = k[2];
-  double d1 = x-xr[0],d2 = 2*(x-xr[1]),d3 = 3*(x-xr[2]);
+  double dph1 = phval - phn_dis1;
+  double dph2 = 2 * (phval - phn_dis2);
+  double dph3 = 3 * (phval - phn_dis3);
   
-  (*e) = k1 * (1 - cos(d1)) + k2 * (1 - cos(d2)) + k3 * (1 - cos(d3));
-  (*f) = - k1 * sin(d1) - 2 * k2 * sin(d2) - 3 * k3 * sin(d3); 
+  (*e) = fscal * (kph_dis1 * (1 - cos(dph1)) +
+		  kph_dis2 * (1 - cos(dph2)) +
+		  kph_dis3 * (1 - cos(dph3)) + eph0);
+  (*f) = - fscal * (kph_dis1 * sin(dph1) +
+		    kph_dis2 * 2 * sin(dph2) +
+		    kph_dis3 * 3 * sin(dph3)); 
+}
+/****************************************************************************/
+void tors_ecalc(double *e,double *f,double dph) {
+  /* Torsion potential V(x) = kph1*(1-cos(x)) + kph3*(1-cos(3x)).
+     Returns (*e) = V(x) and (*f) = -V'(x). */
+
+  (*e) = kph1 * (1 - cos(dph)) + kph3 * (1 - cos(3 * dph));
+  (*f) = - kph1 * sin(dph) - 3 * kph3 * sin(3 * dph); 
 }
 /****************************************************************************/
 double torsion(int iflag) {
@@ -575,7 +598,7 @@ double torsion(int iflag) {
 
   if (iflag < 0) {
     if (FF_TORS == 2) printf("<torsion> bet %lf\n",bet);
-    printf("<torsion> kph %f %f %f \n",kph[0],kph[1],kph[2]);
+    printf("<torsion> kph1 %lf kph3 %lf\n",kph1,kph3);
     return 0;
   }
   
@@ -585,10 +608,19 @@ double torsion(int iflag) {
 	j = i + 1;
 	k = i + 2;
 	l = i + 3;
-	tors_ecalc(&et,&fph,ph[j],phn[j],ktor[j]);
+
+	switch (dis[j]) {
+	case 1  : {tors_ecalc_dis(&et,&fph,ph[j]); break;}
+	default : {tors_ecalc(&et,&fph,ph[j]-phn[j]); break;}
+	}
 	
 	if (FF_TORS == 2) {
-	  tors_ecalc(&e2,&fph2,ph[j],phn2[j],ktor2[j]);
+	  
+	  switch (dis2[j]) {
+	  case 1  : {tors_ecalc_dis(&e2,&fph2,ph[j]); break;}
+	  default : {tors_ecalc(&e2,&fph2,ph[j]-phn2[j]); break;}
+	  }
+	  
 	  log_sum_merge(e1=et,e2,&et,fph1=fph,fph2,&fph,bet);
 	}
 	
@@ -634,7 +666,7 @@ double torsion(int iflag) {
     }
   }
 
-  if (iflag > 0) { /* print energy function */
+  if (iflag > 0) { /* print potential function */
     FILE *fp;
     double d;
     
@@ -646,10 +678,17 @@ double torsion(int iflag) {
 	l = i + 3;
 
 	for (d = -pi; d < pi; d += pi/360) {
-	  tors_ecalc(&e1,&fph1,d,phn[j],ktor[j]);
-
+	  switch (dis[j]) {
+	  case 1  : {tors_ecalc_dis(&e1,&fph1,d); break;}
+	  default : {tors_ecalc(&e1,&fph1,d-phn[j]); break;}
+	  }
+	  
 	  if (FF_TORS == 2) {
-	    tors_ecalc(&e2,&fph2,d,phn[j],ktor2[j]);
+	    switch (dis2[j]) {
+	    case 1  : {tors_ecalc_dis(&e2,&fph2,d); break;}
+	    default : {tors_ecalc(&e2,&fph2,d-phn2[j]); break;}
+	    }
+	    
 	    log_sum_merge(e1,e2,&et,fph1,fph2,&fph,bet);
 	    fprintf(fp,"%i %lf %lf %lf %lf %lf %lf %lf \n",j,d*rad2deg,e1,e2,et,
 		    fph1,fph2,fph);
@@ -696,11 +735,10 @@ double exvol(int iflag)
     cellcalc(-1,0,list);
 
     if (ns * ns * ns > MAXCELL) {printf("# cells > MAXCELL\n"); exit(-1);}
-    printf("<exvol> # cells %i ns %i cutg %f\n",ns*ns*ns,ns,cutg);
-    printf("<exvol>  eps %f sigsa %f \n",eps,sigsa);
-    printf("<exvol>  kcon %f \n",kcon);
+    printf("<exvol>  #cells %i ns %i cutg %f\n",ns*ns*ns,ns,cutg);
+    printf("<exvol>  eps %f sigsa %f krep %f\n",eps,sigsa,krep);
 
-    return 0.0;
+    return 0;
   }
 
   in2box();
@@ -852,10 +890,9 @@ void cont_gcalc(double *e, double *f, double r, double r0,
 		double kcont,double ksi) {
   /* Gaussian function V(r) = kcont * exp(-(r-r0)^2 / 2ksi) */
   /* Returns (*e) = V(r) and (*f) = - V'(r) / r */
-  double dr,g;
 
-  dr = r - r0;
-  g = exp(- dr * dr / 2 / ksi);
+  double dr = r - r0;
+  double g = exp(- dr * dr / 2 / ksi);
 
   (*e) = kcont * g;
   (*f) = kcont * dr * g / ksi / r;
@@ -877,8 +914,6 @@ void cont_rep_ecalc(double *e,double *f,double r2,double sig2,double kcont) {
   
   (*e) = kcont * ( r6 * (r6 - 2) + 1 );
   (*f) = kcont * 12 * r6 * (r6 - 1) / r2 ;
-  
-  return ;
 }
 /****************************************************************************/
 void cont_att_ecalc(double kstr,double r,
@@ -911,6 +946,7 @@ void cont_att_ecalc(double kstr,double r,
 void cont_ecalc(double *e,double *f,double sig2,double kcont,double r2) {
   /* Lennard-Jones-type potential V(r) */
   /* Returns (*e) = V(r) and (*f) = -V'(r) / r */
+
   double r4,r6;
 
   r6 = sig2 / r2; 
@@ -919,8 +955,6 @@ void cont_ecalc(double *e,double *f,double sig2,double kcont,double r2) {
   
   (*e) = kcont * ( r6 * (5 * r6 - 6 * r4)  );
   (*f) = kcont * 60 * ( r6 * (r6 - r4) / r2  );
-  
-  return ;
 }
 /****************************************************************************/
 double cont(int iflag) {

@@ -48,8 +48,8 @@ int main (int argc,char *argv[])
       o[7]=Econ1; o[8]=Econ2; o[9]=Ecorr;  o[10]=Ecc; o[11]=Ecb;
       
       rg1 = sqrt( gyr2(iBeg[0],iEnd[0]) );
-      rmsd1 = rmsd_calc(xnat,ynat,znat,x,y,z,10,67);
-      rmsd2 = rmsd_calc(xnat2,ynat2,znat2,x,y,z,10,67);
+      rmsd1 = rmsd_calc(xnat,ynat,znat,x,y,z,9,68);
+      rmsd2 = rmsd_calc(xnat2,ynat2,znat2,x,y,z,7,53);
 
       o[12] = rg1;
       o[13] = rg2;

@@ -6,7 +6,6 @@ SCRIPT3 = analys_conf
 SCRIPT4 = conf2pdb
 SCRIPT5 = analys_conf_MBAR
 SCRIPT6 = pdb2pdb
-SCRIPT7 = make_potential
 
 FILES.c = energy.c geometry.c sampling.c obs.c misc.c utils.c
 FILES.h = defs.h sys.h 
@@ -52,10 +51,6 @@ ${SCRIPT5}: tools/analys_conf_MBAR.c tools/analys_conf_MBAR.o ${FILES.c} ${FILES
 
 ${SCRIPT6}: tools/pdb2pdb.c tools/pdb2pdb.o 
 	${CC} -o pdb2pdb ${CFLAGS} tools/pdb2pdb.c -lm 
-
-${SCRIPT7}: tools/make_potential.c tools/make_potential.o ${FILES.c} ${FILES.o} 
-	${CC} -o make_potential ${CFLAGS} tools/make_potential.c ${FILES.o} -lm 
-
 
 energy.o: ${FILES.h} param.h
 geometry.o: ${FILES.h}

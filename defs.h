@@ -1,13 +1,13 @@
 /************* simulation settings ******************************************/
 # define NTMP 1                    /* # temperatures                        */
-# define TMAX 1.10                 /* max temperature                       */
-# define TMIN 1.10                 /* min temperature                       */
+# define TMAX 1.0                  /* max temperature                       */
+# define TMIN 1.0                  /* min temperature                       */
 # define BOX 150                   /* simulation box                        */
-# define ISTART 2                  /* 0 native, 1 read, 2 random            */
+# define ISTART 0                  /* 0 native, 1 read, 2 random            */
 # define ISEED 1                   /* 1 randomize seed (/dev/urandom)       */
 /************* MD parameters ************************************************/
 # define MDSTEP (5000000000)       /* max # md steps                        */
-# define NTHERM (1000)           /* # discarded steps                     */
+# define NTHERM (10000)           /* # discarded steps                     */
 # define IFLIP (100)               /* temperature flips                     */
 # define ISAMP (100)               /* sample                                */
 # define ICHECK (100000)           /* checkpoint                            */
@@ -17,13 +17,13 @@
 # define CHAIN_TO_BOX 1            /* translate chains/crowders periodically*/
                                    /* to original image in box [0...BOX]    */
 /************* force field selection ****************************************/
-# define FF_BOND 1                 /* bond() -- 1 on, 2 dual, 0 off         */
-# define FF_BEND 1                 /* bend() -- 1 on, 2 dual, 0 off         */
-# define FF_TORS 1                 /* tors() -- 1 on, 2 dual, 0 off         */
-# define FF_CONT 1                 /* cont() -- 1 on, 2 dual, 0 off         */
+# define FF_BOND 2                 /* bond() -- 1 on, 2 dual, 0 off         */
+# define FF_BEND 2                 /* bend() -- 1 on, 2 dual, 0 off         */
+# define FF_TORS 2                 /* tors() -- 1 on, 2 dual, 0 off         */
+# define FF_CONT 2                 /* cont() -- 1 on, 2 dual, 0 off         */
 # define FF_EXVOL 1                /* exvol()-- 1 on, 0 off                 */
-# define FF_DISULF 1               /* disulfide bonds -- 1 on, 2 dual, 0 off*/
-# define FF_MULTIBODY 1            /* cont() -- multibody effects           */ 
+# define FF_DISULF 2               /* disulfide bonds -- 1 on, 0 off        */
+# define FF_MULTIBODY 1            /* multibody effects -- 1 on, 0 off      */ 
 /************* measurements *************************************************/
 # define NBIN 200                  /* # bins                                */
 # define NOBS 20                   /* # observables                         */
@@ -44,8 +44,8 @@
 # define INPUTG "inputg"
 # define CONTPAR "./"
 # define CONTPAR2 "./"
-# define DISREG1 "./disreg_1j8i"
-# define DISREG2 "./"
+# define DISREG "./disreg_1j8i_1-9_70-93"
+# define DISREG2 "./disreg_2jp1_1-7_55-93"
 # define BONDEDPAR "./"
 # define BONDEDPAR2 "./"
 /************* files output *************************************************/
