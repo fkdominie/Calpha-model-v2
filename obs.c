@@ -108,7 +108,6 @@ void histo_contmap2(int iflag, int ind)
   
   if (ind == NTMP-1) {
     if (iflag==0) { 
-      //      printf("\nI print initial histocontmap2\n");  
       for (m=0;m<npair2;m++) {
 	i=ip3[m]; j=ip4[m];
 	if ( ((x[i]-x[j])*(x[i]-x[j])+
@@ -183,7 +182,6 @@ void histo_bond(int iflag) {
   if (iflag < 0) {
     for (i=0;i<N;i++) for (j=0; j<NBIN; j++) his[i][j] = 0;
     eps = (high - low) / NBIN;
-    printf("<histo_bond> low %f high %f\n",low,high);
 
     strcpy(str,OUTDIR);
     strcat(str,"_his_bond");
@@ -238,7 +236,6 @@ void histo_bend(int iflag) {
   if (iflag < 0) {
     for (i=0; i<N; i++) for (j=0; j<NBIN; j++) his[i][j] = 0;
     eps = (high - low) / NBIN;
-    printf("<histo_bend> low %f high %f\n",low,high);
 
     strcpy(str,OUTDIR);
     strcat(str,"_his_bend");
@@ -277,8 +274,6 @@ void histo_bend(int iflag) {
     fclose(fp);
     return;
   }
-
-  return;
 }
 /****************************************************************************/
 void histo_tors(int iflag,int ia) {
@@ -293,7 +288,6 @@ void histo_tors(int iflag,int ia) {
   if (iflag < 0) {
     for (i = 0; i < NTMP; i++) for (j=0; j<NBIN; j++) his[i][j] = out[i] = 0;
     eps = (high - low) / NBIN;
-    printf("<histo_tors> low %f high %f\n",low,high);
 
     strcpy(str,OUTDIR);
     strcat(str,"_his_tors");
@@ -356,7 +350,6 @@ void histoe(int iflag,double x) {
     strcat(str,"_hise");
 
     fp = fopen(str,"w");
-    printf("<histoe> low %f high %f\n",low,high);
     fclose(fp);
     return;
   }
@@ -489,64 +482,72 @@ void historg(int iflag,double x) {
 }
 /****************************************************************************/
 void histo_cont1(int iflag, int ind, int n){
-  static double his[NTMP][MAXNC+1];
-  static double ene[NTMP][MAXNC+1];
+  static double his[NTMP][MAXP+1];
+  static double ene[NTMP][MAXP+1];
   static double sum;
   int i,j;
   FILE *fp;
+
   if (iflag<0){
     for(i = 0;i < NTMP;i++)
-      for (j = 0; j < MAXNC; j++) his[i][j] = ene[i][j] = 0;
-    //    fp = fopen("results/_his_cont1_full_5onda","w"); // To reset file
-    fp = fopen("results/_his_cont1","w"); // To reset file
+      for (j = 0; j < MAXP; j++) his[i][j] = ene[i][j] = 0;
+    fp = fopen("results/_his_cont1","w"); 
     fclose(fp);
     return;
   }
+
   if (iflag==0){
-    if (n < 0 || n > MAXNC) printf("SHIT %d\n",n);
-    his[ind][n]++;
-    ene[ind][n]+=Epot;
+    if (n >= 0 && n <= MAXP) {
+      his[ind][n]++;
+      ene[ind][n]+=Epot;
+    }
     return;
   }
+  
   if (iflag>0){
     fp=fopen("results/_his_cont1","w");
     for(i = 0; i < NTMP; i++){
-      for(j = sum = 0; j <= MAXNC; j++) sum += his[i][j];
-      for(j = 0; j <= MAXNC; j++){
-	if(his[i][j]>0) fprintf(fp,"%i %i %f %f\n",i,j,his[i][j]/sum,ene[i][j]/his[i][j]);
+      for(j = sum = 0; j <= MAXP; j++) sum += his[i][j];
+      for(j = 0; j <= MAXP; j++){
+	if(his[i][j]>0) fprintf(fp,"%i %i %f %f\n",i,j,
+				his[i][j]/sum,ene[i][j]/his[i][j]);
       }
       fprintf(fp,"\n");
     }
     fclose(fp);
+    return ;
   }
-  return;
+
 }
 /****************************************************************************/
 void histo_cont2(int iflag, int ind, int n){
-  static double his[NTMP][MAXNC+1];
-  static double ene[NTMP][MAXNC+1];
+  static double his[NTMP][MAXP+1];
+  static double ene[NTMP][MAXP+1];
   static double sum;
   int i,j;
   FILE *fp;
+  
   if (iflag<0){
     for(i = 0;i < NTMP;i++)
-      for (j = 0; j < MAXNC; j++) his[i][j] = ene[i][j] = 0;
-    //    fp = fopen("results/_his_cont2_2lcl_CTD","w"); // To reset file
-    fp = fopen("results/_his_cont2","w"); // To reset file
+      for (j = 0; j < MAXP; j++) his[i][j] = ene[i][j] = 0;
+    fp = fopen("results/_his_cont2","w"); 
     fclose(fp);
     return;
   }
+
   if (iflag==0){
-    if (n < 0 || n > MAXNC) printf("SHIT %d\n",n);
-    his[ind][n]++;
-    ene[ind][n]+= Epot;
+    if (n >= 0 && n <= MAXP) {
+      his[ind][n]++;
+      ene[ind][n]+=Epot;
+    }
     return;
   }
+
   if (iflag>0){
     fp=fopen("results/_his_cont2","w");
     for(i = 0; i < NTMP; i++){
-      for(j = sum = 0; j <= MAXNC; j++) sum += his[i][j];
-      for(j = 0; j <= MAXNC; j++){
+      for(j = sum = 0; j <= MAXP; j++) sum += his[i][j];
+      for(j = 0; j <= MAXP; j++){
 	if(his[i][j]>0) fprintf(fp,"%i %i %f %f\n",i,j,his[i][j]/sum,ene[i][j]/his[i][j]);
       }
       fprintf(fp,"\n");

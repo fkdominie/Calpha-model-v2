@@ -301,11 +301,9 @@ double crowd_bead(int iflag){
 }   
 /****************************************************************************/
 void bond_ecalc(double *e,double *f,double db) {
-  
+
   (*e) = kbon * db * db;
   (*f) = - kbon * 2 * db;
-
-  return ;
 }
 /****************************************************************************/
 double bond(int iflag) {
@@ -415,7 +413,7 @@ double bond(int iflag) {
 void bend_ecalc_dis(double *e,double *f,double dtha,double dthb) {
   /* Potential V(x) = -ln[ exp(-(x-ta)^2/(2ka^2) + exp(-(x-tb)^2/(2kb^2) ]  
      where ta,tb are reference values and ka,kb are parameters. V(x) is
-     shifted by an energy eth0. Returns (*e) = V(x) and (*f) = - V'(x) */
+     shifted by eth0. Returns (*e) = V(x) and (*f) = - V'(x) */
 
   double ga,gb;
   

@@ -600,16 +600,15 @@ void set_bonded_param(double *bn,double *thn,double *phn,
   for (i = 1; i < N-1; i++) thn[i] = 120.0*deg2rad;
   for (i = 1; i < N-2; i++) phn[i] = 120.0*deg2rad;
 
-  if (n < N) return ;
+  if (n < N)
+    return ;
 
   /* native */
 
   for (i = 0; i < N; i++) {x[i] = xnat[i]; y[i] = ynat[i]; z[i] = znat[i];}
 
-  if (1 != cart2dof()) {
+  if (1 != cart2dof()) 
     printf("<set_bonded_param> Error native configuration\n");
-    exit(-1);
-  }
 
   for (i = 0; i < N-1; i++)  bn[i] = b[i];
   for (i = 1; i < N-1; i++)  thn[i] = th[i];  
@@ -620,10 +619,8 @@ void read_disregs(char fn[],int *dis) {
   int i,j;
   FILE *fp = fopen(fn,"r");
   
-  if (NULL == fp) {
-    printf("<read_dis_regions> no data in %s\n",fn);
+  if (NULL == fp) 
     return;
-  }  
 
   while (2 == fscanf(fp,"%i %i",&i,&j) && !feof(fp)) 
     if (i >= 0 && i <= N-1 && j > 0) {
@@ -642,7 +639,8 @@ int relax_chains(int ich) {
   double Erel,Eold,pho[N];
   double dx,dy,dz;
 
-  if (N == 0) return 0;
+  if (N == 0)
+    return 0;
   
   for (i = 1; i < N-2; i++) pho[i] = ph[i];
   
@@ -655,7 +653,7 @@ int relax_chains(int ich) {
  
   while (Erel > N * rfac * eps)  {
 
-    icur = (ich < 0 ? NCH * ran3n(&seed) : ich );
+    icur = (ich < 0 ? NCH * ran3n(&seed) : ich);
       
     if ( ran3n(&seed) < 0.5 ) { /* turn torsion angle */
 
@@ -702,7 +700,8 @@ int relax_crowders(void) {
   double Erel,Eold;
   double dx,dy,dz;
   
-  if (NCR == 0) return 0;
+  if (NCR == 0)
+    return 0;
   
   printf("<init> Relaxing crowders... \n");
 
@@ -724,7 +723,8 @@ int relax_crowders(void) {
 	trans_cr(icr, -dx, -dy, -dz);
       }
       
-      //           printf("Erel %lf\n",Eold);
+      if (n % 10000 == 0)  printf("Erel %lf\n",Eold);
+
       n++;
   } 
   
@@ -757,8 +757,6 @@ void read_cont_param(char fn[],int ip1[],int ip2[],int npair,double kcont[]) {
 	     fn,m,i,j,kcont[m]);
     }
   }
-  
-  return ;
 }
 /****************************************************************************/
 /***** INITIALIZATION *******************************************************/
@@ -934,7 +932,7 @@ void init(int iflag) {
   nnat2 = read_native(NATIVE2,xnat2,ynat2,znat2);
   printf("<init> NATIVE2: Found %3i residue positions in %s\n",nnat2,NATIVE2);
 
-  /* contact observables */
+  /* contacts */
 
   npair = npair2 = spair = ndpair = 0;
   for (m = 0; m < MAXP; m++) 
@@ -992,7 +990,7 @@ void init(int iflag) {
       dist_rep2[m] = distp4[m];
     }
     spair = get_shared_contacts(mc1,mc2,dual1,dual2);
-    write_shared_dist("cmap_corr.out",mc1,mc2,spair);
+    write_shared_dist("common_contacts.out",mc1,mc2,spair);
     correct_dist(ip1,ip2,npair,distp2,dist_rep1,dual1,xnat2,ynat2,znat2);
     correct_dist(ip3,ip4,npair2,distp4,dist_rep2,dual2,xnat,ynat,znat);
   }

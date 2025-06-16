@@ -1,7 +1,7 @@
 /************* simulation settings ******************************************/
 # define NTMP 1                    /* # temperatures                        */
-# define TMAX 1.0                  /* max temperature                       */
-# define TMIN 1.0                  /* min temperature                       */
+# define TMAX 0.90                 /* max temperature                       */
+# define TMIN 0.90                 /* min temperature                       */
 # define BOX 150                   /* simulation box                        */
 # define ISTART 0                  /* 0 native, 1 read, 2 random            */
 # define ISEED 1                   /* 1 randomize seed (/dev/urandom)       */
@@ -28,8 +28,7 @@
 # define NBIN 200                  /* # bins                                */
 # define NOBS 20                   /* # observables                         */
 # define MAXCELL 25000             /* max # cells                           */
-# define MAXP 1000                 /* max # contact pairs                   */
-# define MAXNC 500                 /* max # contacts                        */
+# define MAXP 500                  /* max # contact pairs                   */
 # define SNAP1 5000                /* write snapshots to directory SNAPDIR  */
 # define SNAP2 5000                /* for interval SNAP1 < imd < SNAP2      */
 # define RMSD 2                    /* 1 NATIVE, 2 NATIVE2, 0 off            */
