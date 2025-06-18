@@ -79,7 +79,7 @@ void runtime(long it,double o[]) {
   fp = fopen(str,"a");
 
   fprintf(fp,"%li %i ",it,ind);
-  for (i = 1; i < NOBS; i++)
+  for (i = 3; i < NOBS; i++)
     fprintf(fp,"%.4lf ",o[i]);
   fprintf(fp,"\n");
 
@@ -111,7 +111,7 @@ void averages(double so[][NOBS]) {
   fp = fopen(str,"w");
   for (i = 0; i < NTMP; i++) {
     fprintf(fp,"%i %lf ",i,1./beta[i]);
-    for (j = 1; j < NOBS; j++)
+    for (j = 3; j < NOBS; j++)
       fprintf(fp,"%.5f ",so[i][j] / so[i][0]);
     fprintf(fp,"\n");
   }
@@ -573,6 +573,52 @@ void write_natdist(char *fn,double *dist,int n,int *ip1,int *ip2) {
   return;
 }
 /****************************************************************************/
+int read_native(char *fn,double *xr,double *yr,double *zr) {
+  int j, n = 0;
+  double tmpx,tmpy,tmpz;
+  FILE *fp1;
+
+  if ( NULL == (fp1 = fopen(fn,"r")) ) return 0;
+
+  while (4 == fscanf(fp1,"%i %lf %lf %lf",&j,&tmpx,&tmpy,&tmpz)) {
+
+    if (j < 0 || j > N-1) {
+      fprintf(fp_log,"<read_native> (%s) Ignoring j = %i \n",fn,j);
+      continue;
+    }
+
+    xr[j] = tmpx;
+    yr[j] = tmpy;
+    zr[j] = tmpz;
+
+    ++n;
+  }    
+
+  fclose(fp1);
+  
+  return n;
+}
+/****************************************************************************/
+int read_contacts(char *fn,int *ip1,int *ip2) {
+  int n = 0;
+  FILE *fp1;
+
+  if ( NULL == (fp1 = fopen(fn,"r")) )
+    return 0;
+  
+  while (2 == fscanf(fp1,"%i %i",ip1 + n,ip2 + n)) {
+    if (ip1[n] < 0 || ip1[n] > N-1 || ip2[n] < 0 || ip2[n] > N-1) 
+      fprintf(fp_log,"<read_contacts> (%s) Ignoring %3d, %3d\n",
+	      fn,ip1[n],ip2[n]);
+    else 
+      n++;
+  }
+  
+  fclose(fp1);
+
+  return n;
+}  
+/****************************************************************************/
 void write_bonded_param(double *bn,double *thn,double *phn,char *fn) {
   int j;
   char str[100];
@@ -779,6 +825,13 @@ void init(int iflag) {
       if (c >= 'A' && c <= 'z') {
 	seq[k] = c;
 	a2c[k] = j;
+	switch (c) {
+	case 'D' : {qres[k] = -1; break;}
+	case 'E' : {qres[k] = -1; break;}
+	case 'K' : {qres[k] = +1; break;}
+	case 'R' : {qres[k] = +1; break;}
+	default  : {qres[k] =  0; break;}
+	}
 	++k;
       }
     }
@@ -978,6 +1031,7 @@ void init(int iflag) {
       i = ip1[m]; j = ip2[m];
       cc[i][j] = cc[j][i] = 1;
       dist_rep1[m] = distp2[m];
+      fsalt[m] = (csalt - 1) * qres[i] * qres[j] + 1;
     }
   }
   
@@ -988,6 +1042,7 @@ void init(int iflag) {
       i = ip3[m]; j = ip4[m];
       cc[i][j] = cc[j][i] = 1;
       dist_rep2[m] = distp4[m];
+      fsalt2[m] = (csalt - 1) * qres[i] * qres[j] + 1;
     }
     spair = get_shared_contacts(mc1,mc2,dual1,dual2);
     write_shared_dist("common_contacts.out",mc1,mc2,spair);
@@ -999,7 +1054,7 @@ void init(int iflag) {
 
   read_cont_param(CONTPAR,ip1,ip2,npair,kcon_nat1);
   read_cont_param(CONTPAR2,ip3,ip4,npair2,kcon_nat2);
-
+  
   /* BONDED INTERACTIONS */
   
   set_bonded_param(bn,thn,phn,xnat,ynat,znat,nnat1);
@@ -1033,7 +1088,6 @@ void init(int iflag) {
   histo_cont2(-1,0,0);
 
   /* initial chain configuration  */  
-
 
   if (ISTART == 0) {            /* native */
 

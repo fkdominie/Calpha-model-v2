@@ -410,25 +410,27 @@ void histormsd(int iflag,double x) {
 }
 /****************************************************************************/
 void histoq1(int iflag, int x) {
-  static int nc,his[MAXNC];
+  static int nc,his[MAXP];
   int j;
+
   char str[100];
   FILE *fp;
 
   if (iflag<0) {
-      for (j=0;j<MAXNC;j++) his[j]=0;
-      nc=npair;
-    if (nc>MAXNC) {printf("histoq1: nc too big\n");exit(-1);}
+    for (j=0;j<MAXP;j++) his[j]=0;
+    nc=npair;
+    if (nc>MAXP) {printf("histoq1: nc too big\n");exit(-1);}
+
     strcpy(str,OUTDIR);
     strcat(str,"_hisq1");
-
     fp = fopen(str,"w");
     fclose(fp);
+
     return;
   }
   
   if (iflag==0) {
-    if (x>=0 && x<=nc)
+    if (x >= 0 && x <= nc)
       his[x]++;
     return;
   }
@@ -436,10 +438,10 @@ void histoq1(int iflag, int x) {
   if (iflag>0) {
     strcpy(str,OUTDIR);
     strcat(str,"_hisq1");
-
     fp = fopen(str,"w");
-      for (j=0;j<=nc;j++) fprintf(fp,"%i %i\n",j,his[j]);
+    for (j = 0;j <= nc; j++) fprintf(fp,"%i %i\n",j,his[j]);
     fclose(fp);
+    return;
   }
 }
 /****************************************************************************/

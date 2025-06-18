@@ -13,6 +13,7 @@ double sigsa=4.0;                  /* bead diameter                         */
 double cut=8.0;                    /* cutoff distance excluded volume       */
 double ksi1=1.0;                   /* contact parameter                     */
 double ksi2=25.0;                  /* contact parameter                     */
+double csalt=1.0;                  /* effective salt concentration (0-1)    */
 /* disordered regions */
 double bn_dis=3.8;                 /* bond length                           */
 double thn_disa=93.0;              /* angle (alpha)                         */

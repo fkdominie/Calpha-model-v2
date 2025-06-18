@@ -26,25 +26,25 @@
 # define FF_MULTIBODY 1            /* multibody effects -- 1 on, 0 off      */ 
 /************* measurements *************************************************/
 # define NBIN 200                  /* # bins                                */
-# define NOBS 20                   /* # observables                         */
+# define NOBS 22                   /* # observables                         */
 # define MAXCELL 25000             /* max # cells                           */
 # define MAXP 500                  /* max # contact pairs                   */
 # define SNAP1 5000                /* write snapshots to directory SNAPDIR  */
 # define SNAP2 5000                /* for interval SNAP1 < imd < SNAP2      */
 # define RMSD 2                    /* 1 NATIVE, 2 NATIVE2, 0 off            */
 /************* files input **************************************************/
-# define NATIVE "native_1j8i_10-69_full"
-# define NATIVE2 "native_2jp1_dimer_8-54_full"
-# define CONTMAP "smog_1j8i_10-69_mirror"
-# define CONTMAP2 "smog_2jp1_dimer_8-54_del14-18"
+# define NATIVE "native_1j8i_model1"
+# define NATIVE2 "native_2jp1_fullchain_swap"
+# define CONTMAP "smog_1j8i_r9-68_mirror"
+# define CONTMAP2 "smog_2jp1_r8-52_sym"
 # define DISULFIDE "disulfide"
-# define START "native_1j8i_10-69_full" 
+# define START "native_1j8i_model1" 
 # define INPUT "input"
 # define INPUTG "inputg"
 # define CONTPAR "./"
 # define CONTPAR2 "./"
-# define DISREG "./disreg_1j8i_1-9_70-93"
-# define DISREG2 "./disreg_2jp1_1-7_55-93"
+# define DISREG "./dis_regions_1j8i"
+# define DISREG2 "./dis_regions_2jp1"
 # define BONDEDPAR "./"
 # define BONDEDPAR2 "./"
 /************* files output *************************************************/

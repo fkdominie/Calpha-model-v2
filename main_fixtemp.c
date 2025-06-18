@@ -44,21 +44,25 @@ int main (int argc,char *argv[])
 
     if ((imd+1) % ISAMP == 0) {
 
-      o[1]=Ekin; o[2]=Epot; o[3]=Ebon; o[4]=Eben; o[5]=Erep; o[6]=Etor;
-      o[7]=Econ1; o[8]=Econ2; o[9]=Ecorr;  o[10]=Ecc; o[11]=Ecb;
-      
+      /* Energies (o[] index = column number in output files) */
+
+      o[3]=Ekin; o[4]=Epot; o[5]=Ebon; o[6]=Eben; o[7]=Erep; o[8]=Etor;
+      o[9]=Econ1; o[10]=Econ2; o[11]=Ecorr;  o[12]=Ecc; o[13]=Ecb;
+
+      /* Custom */
+
       rg1 = sqrt( gyr2(iBeg[0],iEnd[0]) );
       rmsd1 = rmsd_calc(xnat,ynat,znat,x,y,z,9,68);
       rmsd2 = rmsd_calc(xnat2,ynat2,znat2,x,y,z,7,53);
 
-      o[12] = rg1;
-      o[13] = rg2;
-      o[14] = rmsd1; 
-      o[15] = rmsd2;
-      o[16] = no_cont();
-      o[17] = no_cont2();
-      o[18] = dist_disulf(0);
-      o[19] = dist_disulf(1);
+      o[14] = rg1;
+      o[15] = rg2;
+      o[16] = rmsd1; 
+      o[17] = rmsd2;
+      o[18] = no_cont();
+      o[19] = no_cont2();
+      o[20] = dist_disulf(0);
+      o[21] = dist_disulf(1);
           
       if ((imd+1) > NTHERM) {
         so[ind][0]++; for (i=0 ; i<NOBS; i++) so[ind][i] += o[i];

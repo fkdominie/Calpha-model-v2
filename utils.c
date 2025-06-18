@@ -4,6 +4,7 @@
 # include <math.h>
 # include <string.h>
 # include <stdlib.h>
+/****************************************************************************/
 # include "sys.h"
 # include "defs.h"
 # include "global.h"
@@ -12,47 +13,6 @@ double xcr[NCR],ycr[NCR],zcr[NCR];       /* Crowders coordinates            */
 double xcro[NCR], ycro[NCR], zcro[NCR];  /* Back up for crowders coordinates*/  
 /****************************************************************************/
 /***** input/output *********************************************************/
-/****************************************************************************/
-int read_native(char *fn,double *xr,double *yr,double *zr) {
-  int j, n = 0;
-  double tmpx,tmpy,tmpz;
-  FILE *fp1;
-
-  if ( NULL == (fp1 = fopen(fn,"r")) ) return 0;
-
-  while (4 == fscanf(fp1,"%i %lf %lf %lf",&j,&tmpx,&tmpy,&tmpz)) {
-    if (j < 0 || j > N-1) {
-      fprintf(fp_log,"<read_native> (%s) Ignoring j = %i \n",fn,j);
-      continue;
-    }
-    xr[j] = tmpx; yr[j] = tmpy; zr[j] = tmpz;
-    ++n;
-  }    
-
-  fclose(fp1);
-  
-  return n;
-}
-/****************************************************************************/
-int read_contacts(char *fn,int *ip1,int *ip2) {
-  int n = 0;
-  FILE *fp1;
-
-  if ( NULL == (fp1 = fopen(fn,"r")) )
-    return 0;
-  
-  while (2 == fscanf(fp1,"%i %i",ip1 + n,ip2 + n)) {
-    if (ip1[n] < 0 || ip1[n] > N-1 || ip2[n] < 0 || ip2[n] > N-1) 
-      fprintf(fp_log,"<read_contacts> (%s) Ignoring %3d, %3d\n",
-	      fn,ip1[n],ip2[n]);
-    else 
-      n++;
-  }
-  
-  fclose(fp1);
-
-  return n;
-}  
 /****************************************************************************/
 void dumppdb(char *fn,double *o,int nobs) {
   int i,j,n;

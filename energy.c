@@ -41,6 +41,8 @@ int dual1[MAXP],dual2[MAXP];       /* shared contacts                       */
 double kcon_nat1[MAXP];            /* contact strengths                     */
 double kcon_nat2[MAXP];            /* contact strengths                     */
 int dis[N],dis2[N];                /* 1, disordered region, 0 otherwise     */
+int qres[N];                       /* charges: D,E -1; K,R +1; others 0     */
+double fsalt[MAXP],fsalt2[MAXP];   /* salt-dependent contact scaling factor */ 
 /******************/
 double distp[MAXP];                /* distances                             */
 double distp2[MAXP];               /* distances                             */
@@ -77,7 +79,8 @@ void cont_att_ecalc(double kstr,double r,
 		    int im1,int jm1,int im2,int jm2, 
 		    double dg,double dg1,double dg2,
 		    double *rg1x,double *rg1y,double *rg1z,
-		    double *rg2x,double *rg2y,double *rg2z);
+		    double *rg2x,double *rg2y,double *rg2z,
+		    double fac);
 void cont_gcalc(double *e, double *f,double r, double r0,double kcont,double ksi);
 void cont_ecalc(double *e,double *f,double sig2,double kcont,double r2);
 double cont(int iflag);
@@ -413,7 +416,8 @@ double bond(int iflag) {
 void bend_ecalc_dis(double *e,double *f,double dtha,double dthb) {
   /* Potential V(x) = -ln[ exp(-(x-ta)^2/(2ka^2) + exp(-(x-tb)^2/(2kb^2) ]  
      where ta,tb are reference values and ka,kb are parameters. V(x) is
-     shifted by eth0. Returns (*e) = V(x) and (*f) = - V'(x) */
+     shifted by additive constant eth0. Returns (*e) = V(x) and
+     (*f) = - V'(x) */
 
   double ga,gb;
   
@@ -556,8 +560,8 @@ double bend(int iflag) {
 }
 /****************************************************************************/
 void tors_ecalc_dis(double *e,double *f,double phval) {
-  /* V(x) = k1(1-cos(dph)) + k2(1-cos(2dph)) + k3(1-cos(3dph)) shifted and
-     scaled. */
+  /* V(x) = k1(1-cos(dph)) + k2(1-cos(2dph)) + k3(1-cos(3dph)) shifted (eth0)
+     and scaled (fscal). Returns (*e) = V(x) and (*f) = -V'(x). */
 
   double dph1 = phval - phn_dis1;
   double dph2 = 2 * (phval - phn_dis2);
@@ -676,20 +680,24 @@ double torsion(int iflag) {
 	l = i + 3;
 
 	for (d = -pi; d < pi; d += pi/360) {
+
 	  switch (dis[j]) {
 	  case 1  : {tors_ecalc_dis(&e1,&fph1,d); break;}
 	  default : {tors_ecalc(&e1,&fph1,d-phn[j]); break;}
 	  }
 	  
 	  if (FF_TORS == 2) {
+
 	    switch (dis2[j]) {
 	    case 1  : {tors_ecalc_dis(&e2,&fph2,d); break;}
 	    default : {tors_ecalc(&e2,&fph2,d-phn2[j]); break;}
 	    }
 	    
 	    log_sum_merge(e1,e2,&et,fph1,fph2,&fph,bet);
+
 	    fprintf(fp,"%i %lf %lf %lf %lf %lf %lf %lf \n",j,d*rad2deg,e1,e2,et,
 		    fph1,fph2,fph);
+
 	    continue;
 	  }
 	  
@@ -920,11 +928,15 @@ void cont_att_ecalc(double kstr,double r,
 		    int im1,int jm1,int im2,int jm2, 
 		    double dg,double dg1,double dg2,
 		    double *rg1x,double *rg1y,double *rg1z,
-		    double *rg2x,double *rg2y,double *rg2z) {
+		    double *rg2x,double *rg2y,double *rg2z,
+		    double fac) {
   double rg1,rg2;
   
   cont_gcalc(eg,fg,r,dg,kstr,ksi1);
-	
+
+  (*eg) *= fac; 
+  (*fg) *= fac;
+    
   if (im1 >= 0 && jm1 >= 0) {
     rg1 = vec2(im1,jm1,rg1x,rg1y,rg1z);
     cont_gcalc(eg1,fg1,sqrt(rg1),dg1,1.0,ksi2);
@@ -934,7 +946,7 @@ void cont_att_ecalc(double kstr,double r,
     rg2 = vec2(im2,jm2,rg2x,rg2y,rg2z);
     cont_gcalc(eg2,fg2,sqrt(rg2),dg2,1.0,ksi2);
   } else *eg2 = *fg2 = 1.0;
-
+  
   (*fg1) = - (*eg) * (*fg1) * (*eg2);
   (*fg2) = - (*eg) * (*eg1) * (*fg2);
   (*eg) = - (*eg) * (*eg1) * (*eg2);
@@ -1018,7 +1030,8 @@ double cont(int iflag) {
 	cont_att_ecalc(kcon_nat1[m],r,
 		       &eg,&eg1,&eg2,&fg,&fg1,&fg2,im1,jm1,im2,jm2,
 		       distp[m],distg1[m],distg2[m],
-		       &rg1x,&rg1y,&rg1z,&rg2x,&rg2y,&rg2z);
+		       &rg1x,&rg1y,&rg1z,&rg2x,&rg2y,&rg2z,
+		       fsalt[m]);
 	e += er + eg;
 	fr = fr + fg;
 	add_f(i,j,fr,rx,ry,rz);
@@ -1125,7 +1138,8 @@ double cont2(int iflag) {
 	cont_att_ecalc(kcon_nat2[m],r,
 		       &eg,&eg1,&eg2,&fg,&fg1,&fg2,im1,jm1,im2,jm2,
 		       distp3[m],distg3[m],distg4[m],
-		       &rg1x,&rg1y,&rg1z,&rg2x,&rg2y,&rg2z);
+		       &rg1x,&rg1y,&rg1z,&rg2x,&rg2y,&rg2z,
+		       fsalt2[m]);
 	e += er + eg;
 	fr = fr + fg;
 	add_f(i,j,fr,rx,ry,rz);
@@ -1249,12 +1263,14 @@ double cont_corr(int iflag) {
 	cont_att_ecalc(kcon_nat1[m],r,
 		       &egA,&eg1A,&eg2A,&fgA,&fg1A,&fg2A,im1A,jm1A,im2A,jm2A,
 		       distp[m],distg1[m],distg2[m],
-		       &rg1xA,&rg1yA,&rg1zA,&rg2xA,&rg2yA,&rg2zA);
+		       &rg1xA,&rg1yA,&rg1zA,&rg2xA,&rg2yA,&rg2zA,
+		       fsalt[m]);
 	
 	cont_att_ecalc(kcon_nat2[n],r,
 		       &egB,&eg1B,&eg2B,&fgB,&fg1B,&fg2B,im1B,jm1B,im2B,jm2B,
 		       distp3[n],distg3[n],distg4[n],
-		       &rg1xB,&rg1yB,&rg1zB,&rg2xB,&rg2yB,&rg2zB);
+		       &rg1xB,&rg1yB,&rg1zB,&rg2xB,&rg2yB,&rg2zB,
+		       fsalt2[n]);
 
 	if (egA < egB) {
 	  e += er + egA;
@@ -1275,8 +1291,7 @@ double cont_corr(int iflag) {
     return e;
   }
   
-  if (iflag > 0) {
-    
+  if (iflag > 0) {    
     return 0;
   }
   

@@ -52,6 +52,9 @@ extern double thn_disa,thn_disb,ksi_disa,ksi_disb;
 extern double phn_dis1,phn_dis2,phn_dis3;
 extern double kph_dis1,kph_dis2,kph_dis3;
 extern double eth0,eph0,fscal;
+extern int qres[];
+extern double csalt;
+extern double fsalt[],fsalt2[];
 /************* native structure *********************************************/
 extern double xnat[],ynat[],znat[];
 extern double xnat2[],ynat2[],znat2[];
