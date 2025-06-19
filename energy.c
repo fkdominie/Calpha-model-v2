@@ -38,11 +38,10 @@ int nni2[MAXP],nnj2[MAXP];
 int nni3[MAXP],nnj3[MAXP];
 int nni4[MAXP],nnj4[MAXP];
 int dual1[MAXP],dual2[MAXP];       /* shared contacts                       */
-double kcon_nat1[MAXP];            /* contact strengths                     */
+double kcon_nat[MAXP];             /* contact strengths                     */
 double kcon_nat2[MAXP];            /* contact strengths                     */
 int dis[N],dis2[N];                /* 1, disordered region, 0 otherwise     */
 int qres[N];                       /* charges: D,E -1; K,R +1; others 0     */
-double fsalt[MAXP],fsalt2[MAXP];   /* salt-dependent contact scaling factor */ 
 /******************/
 double distp[MAXP];                /* distances                             */
 double distp2[MAXP];               /* distances                             */
@@ -72,6 +71,7 @@ void bend_ecalc_dis(double *e,double *f,double dtha,double dthb);
 void bend_ecalc(double *e,double *f,double dth);
 void tors_ecalc_dis(double *e,double *f,double phval);
 void tors_ecalc(double *e,double *f,double dph);
+double csalt_fac(double csalt,double qi, double qj);
 void cont_rep_ecalc(double *e,double *f,double r2,double sig2,double kcont);
 void cont_att_ecalc(double kstr,double r,
 		    double *eg,double *eg1,double *eg2,
@@ -79,8 +79,7 @@ void cont_att_ecalc(double kstr,double r,
 		    int im1,int jm1,int im2,int jm2, 
 		    double dg,double dg1,double dg2,
 		    double *rg1x,double *rg1y,double *rg1z,
-		    double *rg2x,double *rg2y,double *rg2z,
-		    double fac);
+		    double *rg2x,double *rg2y,double *rg2z);
 void cont_gcalc(double *e, double *f,double r, double r0,double kcont,double ksi);
 void cont_ecalc(double *e,double *f,double sig2,double kcont,double r2);
 double cont(int iflag);
@@ -892,18 +891,6 @@ double cellcalc(int inc,int nl,short list[])
   return e;
 }
 /****************************************************************************/
-void cont_gcalc(double *e, double *f, double r, double r0,
-		double kcont,double ksi) {
-  /* Gaussian function V(r) = kcont * exp(-(r-r0)^2 / 2ksi) */
-  /* Returns (*e) = V(r) and (*f) = - V'(r) / r */
-
-  double dr = r - r0;
-  double g = exp(- dr * dr / 2 / ksi);
-
-  (*e) = kcont * g;
-  (*f) = kcont * dr * g / ksi / r;
-}
-/****************************************************************************/
 void cont_rep_ecalc(double *e,double *f,double r2,double sig2,double kcont) {
   /* Weeks-Chandler-Andersen-type repulsion V(r) */
   /* Returns (*e) = V(r) and (*f) = - V'(r) / r  */ 
@@ -922,20 +909,32 @@ void cont_rep_ecalc(double *e,double *f,double r2,double sig2,double kcont) {
   (*f) = kcont * 12 * r6 * (r6 - 1) / r2 ;
 }
 /****************************************************************************/
+double csalt_fac(double csalt,double qi, double qj) {
+  return (csalt - 1) * qi * qj + 1;
+}
+/****************************************************************************/
+void cont_gcalc(double *e, double *f, double r, double r0,
+		double kcont,double ksi) {
+  /* Gaussian function V(r) = kcont * exp(-(r-r0)^2 / 2ksi) */
+  /* Returns (*e) = V(r) and (*f) = - V'(r) / r */
+
+  double dr = r - r0;
+  double g = exp(- dr * dr / 2 / ksi);
+
+  (*e) = kcont * g;
+  (*f) = kcont * dr * g / ksi / r;
+}
+/****************************************************************************/
 void cont_att_ecalc(double kstr,double r,
 		    double *eg,double *eg1,double *eg2,
 		    double *fg,double *fg1,double *fg2,
 		    int im1,int jm1,int im2,int jm2, 
 		    double dg,double dg1,double dg2,
 		    double *rg1x,double *rg1y,double *rg1z,
-		    double *rg2x,double *rg2y,double *rg2z,
-		    double fac) {
+		    double *rg2x,double *rg2y,double *rg2z) {
   double rg1,rg2;
   
   cont_gcalc(eg,fg,r,dg,kstr,ksi1);
-
-  (*eg) *= fac; 
-  (*fg) *= fac;
     
   if (im1 >= 0 && jm1 >= 0) {
     rg1 = vec2(im1,jm1,rg1x,rg1y,rg1z);
@@ -999,7 +998,7 @@ double cont(int iflag) {
       if (dual1[m] > 0) continue;
       i = ip1[m]; j = ip2[m];
       fprintf(fp1,"%i %i %lf %lf %lf %i %i %i %i %lf %lf \n",i,j,
-	      kcon_nat1[m],distp[m],sqrt(dist_rep1[m]),
+	      kcon_nat[m],distp[m],sqrt(dist_rep1[m]),
 	      nni1[m],nnj1[m],nni2[m],nnj2[m],
 	      distg1[m],distg2[m]);
     }
@@ -1017,7 +1016,7 @@ double cont(int iflag) {
 
       if (!FF_MULTIBODY) {
 	if ( r2 > 4 * (sig2 = distp2[m]) ) continue;
-	cont_ecalc(&er,&fr,sig2,kcon_nat1[m],r2);
+	cont_ecalc(&er,&fr,sig2,kcon_nat[m],r2);
 	e += er;
 	add_f(i,j,fr,rx,ry,rz);
       }
@@ -1027,11 +1026,10 @@ double cont(int iflag) {
 	im1 = nni1[m]; jm1 = nnj1[m];
 	im2 = nni2[m]; jm2 = nnj2[m];
 	cont_rep_ecalc(&er,&fr,r2,dist_rep1[m],krep);
-	cont_att_ecalc(kcon_nat1[m],r,
+	cont_att_ecalc(kcon_nat[m],r,
 		       &eg,&eg1,&eg2,&fg,&fg1,&fg2,im1,jm1,im2,jm2,
 		       distp[m],distg1[m],distg2[m],
-		       &rg1x,&rg1y,&rg1z,&rg2x,&rg2y,&rg2z,
-		       fsalt[m]);
+		       &rg1x,&rg1y,&rg1z,&rg2x,&rg2y,&rg2z);
 	e += er + eg;
 	fr = fr + fg;
 	add_f(i,j,fr,rx,ry,rz);
@@ -1062,14 +1060,14 @@ double cont(int iflag) {
 
 	if (!FF_MULTIBODY) {
 	  if ( r2 > 4 * (sig2 = distp2[m]) ) continue;
-	  cont_ecalc(&er,&fr,sig2,kcon_nat1[m],r2);
+	  cont_ecalc(&er,&fr,sig2,kcon_nat[m],r2);
 	  fprintf(fp1,"%i %i %i %lf  %lf\n",m,i,j,d,er);
 	}
 
 	if (FF_MULTIBODY) {
 	  if ( (r = sqrt(r2)) > distp[m] + rcut_mb ) continue;
 	  cont_rep_ecalc(&er,&fr,r2,dist_rep1[m],krep);
-	  cont_gcalc(&eg,&fg,r,distp[m],kcon_nat1[m],ksi1);
+	  cont_gcalc(&eg,&fg,r,distp[m],kcon_nat[m],ksi1);
 	  fprintf(fp1,"%i %i %i %lf  %lf %lf %lf \n",m,i,j,d,er-eg,er,eg);
 	} 
 
@@ -1126,8 +1124,8 @@ double cont2(int iflag) {
       if (!FF_MULTIBODY) {
 	if ( r2 > 4 * (sig2 = distp4[m]) ) continue;
 	cont_ecalc(&er,&fr,sig2,kcon_nat2[m],r2);
-	add_f(i,j,fr,rx,ry,rz);
 	e += er;
+	add_f(i,j,fr,rx,ry,rz);
       }
 
       if (FF_MULTIBODY) {
@@ -1138,8 +1136,7 @@ double cont2(int iflag) {
 	cont_att_ecalc(kcon_nat2[m],r,
 		       &eg,&eg1,&eg2,&fg,&fg1,&fg2,im1,jm1,im2,jm2,
 		       distp3[m],distg3[m],distg4[m],
-		       &rg1x,&rg1y,&rg1z,&rg2x,&rg2y,&rg2z,
-		       fsalt2[m]);
+		       &rg1x,&rg1y,&rg1z,&rg2x,&rg2y,&rg2z);
 	e += er + eg;
 	fr = fr + fg;
 	add_f(i,j,fr,rx,ry,rz);
@@ -1227,7 +1224,7 @@ double cont_corr(int iflag) {
 	im2B = nni4[n]; jm2B = nnj4[n];
 
 	fprintf(fp1,"%i %i kcon %lf %lf dist %lf %lf %lf %lf %i %i %i %i %i %i %i %i distg %lf %lf %lf %lf\n",i,j,
-		kcon_nat1[m],kcon_nat2[n],distp[m],distp3[n],
+		kcon_nat[m],kcon_nat2[n],distp[m],distp3[n],
 		sqrt(dist_rep1[m]),sqrt(dist_rep2[n]),
 		im1A,jm1A,im2A,jm2A,im1B,jm1B,im2B,jm2B,
 		distg1[m],distg2[m],
@@ -1260,17 +1257,15 @@ double cont_corr(int iflag) {
 
 	cont_rep_ecalc(&er,&fr,r2,dist_rep1[m],krep);
 
-	cont_att_ecalc(kcon_nat1[m],r,
+	cont_att_ecalc(kcon_nat[m],r,
 		       &egA,&eg1A,&eg2A,&fgA,&fg1A,&fg2A,im1A,jm1A,im2A,jm2A,
 		       distp[m],distg1[m],distg2[m],
-		       &rg1xA,&rg1yA,&rg1zA,&rg2xA,&rg2yA,&rg2zA,
-		       fsalt[m]);
+		       &rg1xA,&rg1yA,&rg1zA,&rg2xA,&rg2yA,&rg2zA);
 	
 	cont_att_ecalc(kcon_nat2[n],r,
 		       &egB,&eg1B,&eg2B,&fgB,&fg1B,&fg2B,im1B,jm1B,im2B,jm2B,
 		       distp3[n],distg3[n],distg4[n],
-		       &rg1xB,&rg1yB,&rg1zB,&rg2xB,&rg2yB,&rg2zB,
-		       fsalt2[n]);
+		       &rg1xB,&rg1yB,&rg1zB,&rg2xB,&rg2yB,&rg2zB);
 
 	if (egA < egB) {
 	  e += er + egA;

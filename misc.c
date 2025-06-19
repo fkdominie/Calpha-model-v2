@@ -1025,13 +1025,12 @@ void init(int iflag) {
   /* NON-BONDED INTERACTIONS */
 
   if (FF_CONT > 0) {
-    for (m = 0; m < npair; m++) kcon_nat1[m] = kcon;
+    for (m = 0; m < npair; m++) kcon_nat[m] = kcon;
     get_nndist(distg1,distg2,ip1,ip2,npair,nni1,nnj1,nni2,nnj2,xnat,ynat,znat);
     for (m = 0; m < npair; m++) {
       i = ip1[m]; j = ip2[m];
       cc[i][j] = cc[j][i] = 1;
       dist_rep1[m] = distp2[m];
-      fsalt[m] = (csalt - 1) * qres[i] * qres[j] + 1;
     }
   }
   
@@ -1042,7 +1041,6 @@ void init(int iflag) {
       i = ip3[m]; j = ip4[m];
       cc[i][j] = cc[j][i] = 1;
       dist_rep2[m] = distp4[m];
-      fsalt2[m] = (csalt - 1) * qres[i] * qres[j] + 1;
     }
     spair = get_shared_contacts(mc1,mc2,dual1,dual2);
     write_shared_dist("common_contacts.out",mc1,mc2,spair);
@@ -1052,8 +1050,21 @@ void init(int iflag) {
 
   /* parameters from file */  
 
-  read_cont_param(CONTPAR,ip1,ip2,npair,kcon_nat1);
+  read_cont_param(CONTPAR,ip1,ip2,npair,kcon_nat);
   read_cont_param(CONTPAR2,ip3,ip4,npair2,kcon_nat2);
+
+  /* Effective screening of contacts between charged residues */
+  
+  if (FF_CSALT) {
+    printf("<init> csalt: %.2lf\n",csalt);
+    printf("<init> csalt_fac: (qi,qj = 1,1) %.2lf (qi,qj= 1,-1) %.2lf \n",
+	   csalt_fac(csalt,1,1),csalt_fac(csalt,1,-1));
+    for (m = 0; m < npair; m++)
+      kcon_nat[m] *= csalt_fac(csalt,qres[ip1[m]],qres[ip2[m]]);
+
+    for (m = 0; m < npair2; m++)
+      kcon_nat2[m] *= csalt_fac(csalt,qres[ip3[m]],qres[ip4[m]]);
+  }
   
   /* BONDED INTERACTIONS */
   

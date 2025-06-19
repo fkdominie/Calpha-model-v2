@@ -23,7 +23,8 @@
 # define FF_CONT 2                 /* cont() -- 1 on, 2 dual, 0 off         */
 # define FF_EXVOL 1                /* exvol()-- 1 on, 0 off                 */
 # define FF_DISULF 2               /* disulfide bonds -- 1 on, 0 off        */
-# define FF_MULTIBODY 1            /* multibody effects -- 1 on, 0 off      */ 
+# define FF_MULTIBODY 1            /* multibody effects -- 1 on, 0 off      */
+# define FF_CSALT 1                /* salt (csalt) screening - 1 on, 0 off  */
 /************* measurements *************************************************/
 # define NBIN 200                  /* # bins                                */
 # define NOBS 22                   /* # observables                         */
