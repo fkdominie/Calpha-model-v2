@@ -1,5 +1,5 @@
 /************* geometry ************/
-# define N 93        /* # monomers */
-# define NCH 1      /* # chains   */
+# define N 186        /* # monomers */
+# define NCH 2      /* # chains   */
 # define NCR 0      /* # crowders   */
 /***********************************/

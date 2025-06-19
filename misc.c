@@ -6,6 +6,7 @@
 # include <stdlib.h>
 # include <sys/types.h>
 # include <sys/stat.h>
+/*********************/
 # include "sys.h"
 # include "defs.h"
 # include "global.h"
@@ -35,8 +36,10 @@ void printinfo(void) {
   printf("  NTMP %i TMIN %lf TMAX %lf \n",NTMP, TMIN, TMAX);
   printf("  BOX %i \n",BOX);
   printf("Force field:\n");
-  printf("  FF_BOND %i FF_BEND %i FF_TORS %i \n",FF_BOND,FF_BEND,FF_TORS);
-  printf("  FF_CONT %i \n",FF_CONT);
+  printf("  FF_BOND %i FF_BEND %i FF_TORS %i FF_CONT %i\n",
+	 FF_BOND,FF_BEND,FF_TORS,FF_CONT);
+  printf("  FF_DISULF %i FF_CSALT %i \n",
+	 FF_DISULF,FF_CSALT);
   if (NCR > 0){
     printf("Interaction parameters crowders:\n");
     printf("  rcrowd %lf srefcr %lf\n",rcrowd,srefcr);

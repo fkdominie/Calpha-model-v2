@@ -4,6 +4,7 @@
 # include <math.h>
 # include <string.h>
 # include <stdlib.h>
+/******************/
 # include "param.h"
 # include "sys.h"
 # include "defs.h"
@@ -910,6 +911,8 @@ void cont_rep_ecalc(double *e,double *f,double r2,double sig2,double kcont) {
 }
 /****************************************************************************/
 double csalt_fac(double csalt,double qi, double qj) {
+  /* salt-dependent scaling factor applied to the attractive part of native
+     contact interactions */
   return (csalt - 1) * qi * qj + 1;
 }
 /****************************************************************************/
