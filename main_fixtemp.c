@@ -15,6 +15,7 @@ int main (int argc,char *argv[])
   int i,j;
   double o[NOBS],so[NTMP][NOBS];
   double nn1=0,nn2=0,rmsd1=0,rmsd2=0,rg1=0,rg2=0;
+  double rmsd3=0,rmsd4=0;
   //  double qcut_a = 58;
   //  double qcut_b = 76;
   
@@ -22,8 +23,6 @@ int main (int argc,char *argv[])
   for (i = 0; i < argc; i++)
     printf("%s ",argv[i]);
   printf("\n\n");
-
-  //  printf("<main_fixtemp> qcut_a %lf qcut_b %lf \n",qcut_a,qcut_b);
 
   if (NTMP > 1) {
     printf("NTMP > 1\nExiting...\n");
@@ -51,18 +50,36 @@ int main (int argc,char *argv[])
 
       /* Custom */
 
+      /* two chains */
+
       rg1 = sqrt( gyr2(iBeg[0],iEnd[0]) );
+      rg2 = sqrt( gyr2(iBeg[1],iEnd[1]) );
       rmsd1 = rmsd_calc(xnat,ynat,znat,x,y,z,9,68);
       rmsd2 = rmsd_calc(xnat2,ynat2,znat2,x,y,z,7,53);
+      rmsd3 = rmsd_calc(xnat,ynat,znat,x,y,z,102,161);
+      rmsd4 = rmsd_calc(xnat2,ynat2,znat2,x,y,z,100,146);
 
       o[14] = rg1;
       o[15] = rg2;
-      o[16] = rmsd1; 
+      o[16] = rmsd1;
       o[17] = rmsd2;
-      o[18] = no_cont();
-      o[19] = no_cont2();
-      o[20] = dist_disulf(0);
-      o[21] = dist_disulf(1);
+      o[18] = rmsd3;
+      o[19] = rmsd4;
+      o[20] = no_cont(0);
+      o[21] = no_cont2(0);
+      o[22] = no_cont(1);
+      o[23] = no_cont2(1);
+      o[24] = no_cont2_ch2ch(0,1);
+
+      /* single chain */
+      /*      o[14] = rg1;
+	      o[15] = rg2;
+	      o[16] = rmsd1; 
+	      o[17] = rmsd2;
+	      o[18] = no_cont();
+	      o[19] = no_cont2();
+	      o[20] = dist_disulf(0);
+	      o[21] = dist_disulf(1); */
           
       if ((imd+1) > NTHERM) {
         so[ind][0]++; for (i=0 ; i<NOBS; i++) so[ind][i] += o[i];

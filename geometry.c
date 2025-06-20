@@ -26,7 +26,15 @@ double vec2(int i,int j,double *rx,double *ry,double *rz) {
   (*rx) = x[j] - x[i]; bc(rx);
   (*ry) = y[j] - y[i]; bc(ry);
   (*rz) = z[j] - z[i]; bc(rz);
-  return  (*rx)*(*rx) + (*ry)*(*ry) + (*rz)*(*rz);
+  return  (*rx) * (*rx) + (*ry) * (*ry) + (*rz) * (*rz);
+}
+/****************************************************************************/
+double dist2(int i,int j) {
+  double dx,dy,dz;
+  dx = x[j] - x[i]; bc(&dx);
+  dy = y[j] - y[i]; bc(&dy);
+  dz = z[j] - z[i]; bc(&dz);
+  return dx * dx + dy * dy + dz * dz;
 }
 /****************************************************************************/
 void trans(int ic,double dx,double dy,double dz) {

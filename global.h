@@ -180,13 +180,16 @@ double gyr2(int a1,int a2);
 double dcm(void);
 void histo_contmap(int iflag, int ind);
 void histo_contmap2(int iflag, int ind);
-int no_cont(void);
-int no_cont2(void);
+int no_cont(int ch);
+int no_cont2(int ch);
+int no_cont_ch2ch(int ch1,int ch2);
+int no_cont2_ch2ch(int ch1,int ch2);
 /* sampling */
 void tflip(double e);
 void mdstep(void);
 /* geometry.c */
 double vec2(int i,int j,double *rx,double *ry,double *rz);
+double dist2(int i,int j);
 void trans(int ic,double dx,double dy,double dz);
 void trans_cr(int ic,double dx,double dy,double dz);
 void bc(double *x);

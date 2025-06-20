@@ -1,7 +1,7 @@
 /************* simulation settings ******************************************/
 # define NTMP 1                    /* # temperatures                        */
-# define TMAX 0.85                 /* max temperature                       */
-# define TMIN 0.85                 /* min temperature                       */
+# define TMAX 0.88                 /* max temperature                       */
+# define TMIN 0.88                 /* min temperature                       */
 # define BOX 150                   /* simulation box                        */
 # define ISTART 0                  /* 0 native, 1 read, 2 random            */
 # define ISEED 1                   /* 1 randomize seed (/dev/urandom)       */
@@ -27,7 +27,7 @@
 # define FF_CSALT 1                /* salt (csalt) screening - 1 on, 0 off  */
 /************* measurements *************************************************/
 # define NBIN 200                  /* # bins                                */
-# define NOBS 22                   /* # observables                         */
+# define NOBS 25                   /* # observables                         */
 # define MAXCELL 25000             /* max # cells                           */
 # define MAXP 500                  /* max # contact pairs                   */
 # define SNAP1 5000                /* write snapshots to directory SNAPDIR  */
