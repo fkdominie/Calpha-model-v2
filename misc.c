@@ -407,9 +407,10 @@ int read_conf(int iflag,char *fn,char *fdir) {
 /****************************************************************************/
 void correct_dist(int *ip1,int *ip2,int n,double *dist2,double dist_rep[],
 		      int *dual,double *xn,double *yn,double *zn) {
-  /* Looks for native contacts in one native structure for which the distance
-     between the beads is smaller in the alternative structure (for dual-basin
-     potentials). Reduce the repulsive range to avoid steric clashes.*/
+  /* Looks for contacts ip1,ip2 with a native distance dist2 larger than the
+     native distance of another fold (xn,yn,zn). The latter distance then
+     replaces dist2 as the repulsive range dist_rep of the contact, avoiding
+     steric clashes. */
   int i,j,m;
   double r2;  
 
@@ -420,33 +421,35 @@ void correct_dist(int *ip1,int *ip2,int n,double *dist2,double dist_rep[],
     i = ip1[m]; j = ip2[m];
     r2 = ( (xn[i] - xn[j]) * (xn[i] - xn[j]) +
 	   (yn[i] - yn[j]) * (yn[i] - yn[j]) + 
-	   (zn[i] - zn[j]) * (zn[i] - zn[j]));
-    if (r2 > dist2[m]) continue;
-    dist_rep[m] = r2;
-    fprintf(fp_log,"<correct_dist> %s cont %3i %3i (%3.5lf < %3.5lf). Setting repulsive distance to %lf\n",
-	    dual[m] > 0 ? "Dual  " : "Native",i,j,sqrt(r2),sqrt(dist2[m]),sqrt(dist_rep[m]));
+	   (zn[i] - zn[j]) * (zn[i] - zn[j]) );
+
+    if (dist2[m] > r2) {
+      dist_rep[m] = r2;
+      fprintf(fp_log,"<correct_dist> %s cont %3i %3i (%3.5lf < %3.5lf). Setting repulsive distance to %lf\n",
+	      dual[m] > 0 ? "Dual  " : "Native",i,j,sqrt(r2),sqrt(dist2[m]),sqrt(dist_rep[m]));
+    }
   }
 
   return ;
 }
 /****************************************************************************/
-int get_shared_contacts(int *mc1,int *mc2,int *dual1,int *dual2)
-{
-  int i,j,m,n,s;
+int get_shared_contacts(int *mc1,int *mc2,int *dual1,int *dual2) {
+  int i,j,m,n,s = 0;
 
   if (FF_CONT < 2)
     return 0; 
 
-  for (m = s = 0; m < npair; m++) {
+  for (m = 0; m < npair; m++) {
     i = ip1[m]; j = ip2[m];
 
     for (n = 0; n < npair2; n++) {
       if ( (i == ip3[n] && j == ip4[n]) ||
 	   (j == ip3[n] && i == ip4[n]) ) {
 	mc1[s] = m;
-	mc2[s++] = n;
+	mc2[s] = n;
 	dual1[m] = 1;
 	dual2[n] = 1;
+	s++;
       }
     }
 

@@ -1,7 +1,7 @@
 /************* simulation settings ******************************************/
 # define NTMP 1                    /* # temperatures                        */
-# define TMAX 0.88                 /* max temperature                       */
-# define TMIN 0.88                 /* min temperature                       */
+# define TMAX 0.94                 /* max temperature                       */
+# define TMIN 0.94                 /* min temperature                       */
 # define BOX 150                   /* simulation box                        */
 # define ISTART 0                  /* 0 native, 1 read, 2 random            */
 # define ISEED 1                   /* 1 randomize seed (/dev/urandom)       */
