@@ -1,7 +1,7 @@
 /************* simulation settings ******************************************/
 # define NTMP 1                    /* # temperatures                        */
-# define TMAX 0.94                 /* max temperature                       */
-# define TMIN 0.94                 /* min temperature                       */
+# define TMAX 0.90                 /* max temperature                       */
+# define TMIN 0.90                 /* min temperature                       */
 # define BOX 150                   /* simulation box                        */
 # define ISTART 0                  /* 0 native, 1 read, 2 random            */
 # define ISEED 1                   /* 1 randomize seed (/dev/urandom)       */
@@ -22,7 +22,7 @@
 # define FF_TORS 2                 /* tors() -- 1 on, 2 dual, 0 off         */
 # define FF_CONT 2                 /* cont() -- 1 on, 2 dual, 0 off         */
 # define FF_EXVOL 1                /* exvol()-- 1 on, 0 off                 */
-# define FF_DISULF 2               /* disulfide bonds -- 1 on, 0 off        */
+# define FF_DISULF 2               /* disulfide bonds -- 1 on, 2 dual, 0 off*/
 # define FF_MULTIBODY 1            /* multibody effects -- 1 on, 0 off      */
 # define FF_CSALT 1                /* salt (csalt) screening - 1 on, 0 off  */
 /************* measurements *************************************************/
