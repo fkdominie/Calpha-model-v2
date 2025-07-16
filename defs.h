@@ -24,7 +24,7 @@
 # define FF_EXVOL 1                /* exvol()-- 1 on, 0 off                 */
 # define FF_DISULF 2               /* disulfide bonds -- 1 on, 2 dual, 0 off*/
 # define FF_MULTIBODY 1            /* multibody effects -- 1 on, 0 off      */
-# define FF_CSALT 1                /* salt (csalt) screening - 1 on, 0 off  */
+# define FF_SALT 0                 /* screening effect (csalt) -- 1 on 0 off*/
 /************* measurements *************************************************/
 # define NBIN 200                  /* # bins                                */
 # define NOBS 25                   /* # observables                         */
@@ -36,7 +36,7 @@
 /************* files input **************************************************/
 # define NATIVE "native_1j8i_model1"
 # define NATIVE2 "native_2jp1_fullchain"
-# define CONTMAP "smog_1j8i_r9-68_mirror"
+# define CONTMAP "smog_1j8i_r9-68_mirror_extra_20-24_9-46"
 # define CONTMAP2 "smog_2jp1_r8-52_sym"
 # define DISULFIDE "disulfide"
 # define START "native_1j8i_model1" 

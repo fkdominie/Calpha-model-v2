@@ -38,8 +38,6 @@ void printinfo(void) {
   printf("Force field:\n");
   printf("  FF_BOND %i FF_BEND %i FF_TORS %i FF_CONT %i\n",
 	 FF_BOND,FF_BEND,FF_TORS,FF_CONT);
-  printf("  FF_DISULF %i FF_CSALT %i \n",
-	 FF_DISULF,FF_CSALT);
   if (NCR > 0){
     printf("Interaction parameters crowders:\n");
     printf("  rcrowd %lf srefcr %lf\n",rcrowd,srefcr);
@@ -405,12 +403,11 @@ int read_conf(int iflag,char *fn,char *fdir) {
   return 0;
 } 
 /****************************************************************************/
-void correct_dist(int *ip1,int *ip2,int n,double *dist2,double dist_rep[],
-		      int *dual,double *xn,double *yn,double *zn) {
-  /* Looks for contacts ip1,ip2 with a native distance dist2 larger than the
-     native distance of another fold (xn,yn,zn). The latter distance then
-     replaces dist2 as the repulsive range dist_rep of the contact, avoiding
-     steric clashes. */
+void check_distances(int *ip1,int *ip2,int n,double *dist2,int *dual,
+		     double *xn,double *yn,double *zn) {
+  /* Look for native contacts (ip1,ip2) with a distance (dist2) greater than
+     the distance of that contact in another fold (xn,yn,zn). Care should be
+     taken with such contacts as they may results in steric clashes. */
   int i,j,m;
   double r2;  
 
@@ -418,16 +415,22 @@ void correct_dist(int *ip1,int *ip2,int n,double *dist2,double dist_rep[],
     return ;
   
   for (m = 0; m < n; m++) {
+    if (dual[m] > 0) continue;
+
     i = ip1[m]; j = ip2[m];
     r2 = ( (xn[i] - xn[j]) * (xn[i] - xn[j]) +
 	   (yn[i] - yn[j]) * (yn[i] - yn[j]) + 
 	   (zn[i] - zn[j]) * (zn[i] - zn[j]) );
 
-    if (dist2[m] > r2) {
-      dist_rep[m] = r2;
-      fprintf(fp_log,"<correct_dist> %s cont %3i %3i (%3.5lf < %3.5lf). Setting repulsive distance to %lf\n",
-	      dual[m] > 0 ? "Dual  " : "Native",i,j,sqrt(r2),sqrt(dist2[m]),sqrt(dist_rep[m]));
-    }
+    if (dist2[m] > r2) 
+      printf("<check_distances> cont %3i %3i (%3.5lf < %3.5lf). Caution: potential steric clash.\n",
+	     i,j,sqrt(r2),sqrt(dist2[m]));
+
+    /*    if (dist2[m] > r2) {
+	  dist_rep[m] = r2;
+	  fprintf(fp_log,"<correct_dist> %s cont %3i %3i (%3.5lf < %3.5lf). Setting repulsive distance to %lf\n",
+	  dual[m] > 0 ? "Dual  " : "Native",i,j,sqrt(r2),sqrt(dist2[m]),sqrt(dist_rep[m]));
+	  }  */
   }
 
   return ;
@@ -1013,14 +1016,18 @@ void init(int iflag) {
 
   if (FF_DISULF) {
     ndpair = read_contacts(DISULFIDE,id1,id2);
-    printf("<init> DISULFIDE: Found %i contacts in %s\n",ndpair,DISULFIDE);
+    printf("<init> FF_DISULF %i \n",FF_DISULF);
+    printf("<init> DISULFIDE: Found %i contacts in %s \n",ndpair,DISULFIDE);
     printf("<init> DISULFIDE: "); get_natdist(distd1,fdum,id1,id2,ndpair,xnat,ynat,znat);
-    printf("<init> DISULFIDE: Writing to %s\n","disulf.out");
     write_natdist("disulf.out",distd1,ndpair,id1,id2);
     if (FF_DISULF == 2) {
       printf("<init> DISULFIDE: "); get_natdist(distd2,fdum,id1,id2,ndpair,xnat2,ynat2,znat2);
-      printf("<init> DISULFIDE: Writing to %s\n","disulf2.out");
       write_natdist("disulf2.out",distd2,ndpair,id1,id2);
+    }
+    for (n = 0; n < ndpair; n++) {
+      printf("<init> DISULFIDE: %4i %4i %10.5lf ",id1[n],id2[n],distd1[n]);
+      if (FF_DISULF == 2) printf("%10.5lf",distd2[n]);
+      printf("\n");
     }
   }
 
@@ -1036,7 +1043,6 @@ void init(int iflag) {
     for (m = 0; m < npair; m++) {
       i = ip1[m]; j = ip2[m];
       cc[i][j] = cc[j][i] = 1;
-      dist_rep1[m] = distp2[m];
     }
   }
   
@@ -1046,12 +1052,13 @@ void init(int iflag) {
     for (m = 0; m < npair2; m++) {
       i = ip3[m]; j = ip4[m];
       cc[i][j] = cc[j][i] = 1;
-      dist_rep2[m] = distp4[m];
     }
     spair = get_shared_contacts(mc1,mc2,dual1,dual2);
     write_shared_dist("common_contacts.out",mc1,mc2,spair);
-    correct_dist(ip1,ip2,npair,distp2,dist_rep1,dual1,xnat2,ynat2,znat2);
-    correct_dist(ip3,ip4,npair2,distp4,dist_rep2,dual2,xnat,ynat,znat);
+    printf("Looking for clashes in NATIVE2 (%s) due to dual basin potential...\n",NATIVE2);
+    check_distances(ip1,ip2,npair,distp2,dual1,xnat2,ynat2,znat2);
+    printf("Looking for clashes in NATIVE (%s) due to dual basin potential...\n",NATIVE);
+    check_distances(ip3,ip4,npair2,distp4,dual2,xnat,ynat,znat);
   }
 
   /* parameters from file */  
@@ -1061,10 +1068,12 @@ void init(int iflag) {
 
   /* Effective screening of contacts between charged residues */
   
-  if (FF_CSALT) {
+  if (FF_SALT) {
+    printf("<init> FF_SALT %i \n",FF_SALT);
     printf("<init> csalt: %.2lf\n",csalt);
     printf("<init> csalt_fac: (qi,qj = 1,1) %.2lf (qi,qj= 1,-1) %.2lf \n",
 	   csalt_fac(csalt,1,1),csalt_fac(csalt,1,-1));
+
     for (m = 0; m < npair; m++)
       kcon_nat[m] *= csalt_fac(csalt,qres[ip1[m]],qres[ip2[m]]);
 

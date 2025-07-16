@@ -85,8 +85,6 @@ extern double distp3[];
 extern double distp4[];
 extern double distd1[]; 
 extern double distd2[]; 
-extern double dist_rep1[];
-extern double dist_rep2[];
 extern double distg1[],distg2[];
 extern double distg3[],distg4[];
 extern short cc[][N];
@@ -130,8 +128,8 @@ int read_momenta(char *fn,char *fdir);
 int read_forces(char *fname,char *fdir);
 int read_data(char *fname,char *fdir,long *imd,long *seed,long *orig);
 int read_checkpnt(void);
-void correct_dist(int *ip1,int *ip2,int n,double *dist2,double dist_rep[],
-		  int *dual,double *xn,double *yn,double *zn);
+void check_distances(int *ip1,int *ip2,int n,double *dist2,int *dual,
+		     double *xn,double *yn,double *zn);
 void write_shared_dist(char *fn,int *mc1,int *mc2,int spair);
 int get_shared_contacts(int *mc1,int *mc2,int *dual1,int *dual2);
 void get_natdist(double *dist,double *dist2,int *ip1,int *ip2,int n,

@@ -50,8 +50,6 @@ double distp3[MAXP];               /* distances                             */
 double distp4[MAXP];               /* distances                             */
 double distd1[MAXP];               /* distances                             */
 double distd2[MAXP];               /* distances                             */
-double dist_rep1[MAXP];            /* distances                             */
-double dist_rep2[MAXP];            /* distances                             */
 double distg1[MAXP];               /* distances                             */
 double distg2[MAXP];               /* distances                             */
 double distg3[MAXP];               /* distances                             */
@@ -1000,8 +998,8 @@ double cont(int iflag) {
     for (m = 0; m < npair; m++) {
       if (dual1[m] > 0) continue;
       i = ip1[m]; j = ip2[m];
-      fprintf(fp1,"%i %i %lf %lf %lf %i %i %i %i %lf %lf \n",i,j,
-	      kcon_nat[m],distp[m],sqrt(dist_rep1[m]),
+      fprintf(fp1,"%i %i %lf %lf %i %i %i %i %lf %lf \n",i,j,
+	      kcon_nat[m],distp[m],
 	      nni1[m],nnj1[m],nni2[m],nnj2[m],
 	      distg1[m],distg2[m]);
     }
@@ -1028,13 +1026,16 @@ double cont(int iflag) {
 	if ( (r = sqrt(r2)) > distp[m] + rcut_mb ) continue;
 	im1 = nni1[m]; jm1 = nnj1[m];
 	im2 = nni2[m]; jm2 = nnj2[m];
-	cont_rep_ecalc(&er,&fr,r2,dist_rep1[m],krep);
+
+	cont_rep_ecalc(&er,&fr,r2,distp2[m],krep);
 	cont_att_ecalc(kcon_nat[m],r,
 		       &eg,&eg1,&eg2,&fg,&fg1,&fg2,im1,jm1,im2,jm2,
 		       distp[m],distg1[m],distg2[m],
 		       &rg1x,&rg1y,&rg1z,&rg2x,&rg2y,&rg2z);
+
 	e += er + eg;
 	fr = fr + fg;
+
 	add_f(i,j,fr,rx,ry,rz);
 	add_f(im1,jm1,fg1,rg1x,rg1y,rg1z);
 	add_f(im2,jm2,fg2,rg2x,rg2y,rg2z);
@@ -1069,9 +1070,15 @@ double cont(int iflag) {
 
 	if (FF_MULTIBODY) {
 	  if ( (r = sqrt(r2)) > distp[m] + rcut_mb ) continue;
-	  cont_rep_ecalc(&er,&fr,r2,dist_rep1[m],krep);
-	  cont_gcalc(&eg,&fg,r,distp[m],kcon_nat[m],ksi1);
-	  fprintf(fp1,"%i %i %i %lf  %lf %lf %lf \n",m,i,j,d,er-eg,er,eg);
+	  im1 = jm1 = im2 = jm2 = -1;
+	  
+	  cont_rep_ecalc(&er,&fr,r2,distp2[m],krep);
+	  cont_att_ecalc(kcon_nat[m],r,
+		       &eg,&eg1,&eg2,&fg,&fg1,&fg2,im1,jm1,im2,jm2,
+		       distp[m],distg1[m],distg2[m],
+		       &rg1x,&rg1y,&rg1z,&rg2x,&rg2y,&rg2z);
+
+	  fprintf(fp1,"%i %i %i %lf  %lf %lf %lf \n",m,i,j,d,e+eg,er,eg);
 	} 
 
       }
@@ -1108,8 +1115,8 @@ double cont2(int iflag) {
     for (m = 0; m < npair2; m++) {
       if (dual2[m] > 0) continue;
       i = ip3[m]; j = ip4[m];
-      fprintf(fp1,"%i %i %lf %lf %lf %i %i %i %i %lf %lf\n",i,j,
-	      kcon_nat2[m],distp3[m],sqrt(dist_rep2[m]),
+      fprintf(fp1,"%i %i %lf %lf %i %i %i %i %lf %lf\n",i,j,
+	      kcon_nat2[m],distp3[m],
 	      nni3[m],nnj3[m],nni4[m],nnj4[m],
 	      distg3[m],distg4[m]);
     }
@@ -1122,6 +1129,7 @@ double cont2(int iflag) {
     for (m = 0; m < npair2; m++) {
       if (dual2[m] > 0) continue;
       i=ip3[m]; j=ip4[m];
+
       r2 = vec2(i,j,&rx,&ry,&rz);
 
       if (!FF_MULTIBODY) {
@@ -1135,11 +1143,13 @@ double cont2(int iflag) {
 	if ( (r = sqrt(r2)) > distp3[m] + rcut_mb ) continue;
 	im1 = nni3[m]; jm1 = nnj3[m];
 	im2 = nni4[m]; jm2 = nnj4[m];
-	cont_rep_ecalc(&er,&fr,r2,dist_rep2[m],krep);
+
+	cont_rep_ecalc(&er,&fr,r2,distp4[m],krep);
 	cont_att_ecalc(kcon_nat2[m],r,
 		       &eg,&eg1,&eg2,&fg,&fg1,&fg2,im1,jm1,im2,jm2,
 		       distp3[m],distg3[m],distg4[m],
 		       &rg1x,&rg1y,&rg1z,&rg2x,&rg2y,&rg2z);
+
 	e += er + eg;
 	fr = fr + fg;
 	add_f(i,j,fr,rx,ry,rz);
@@ -1169,9 +1179,15 @@ double cont2(int iflag) {
 
 	if (FF_MULTIBODY) {
 	  if ( (r = sqrt(r2)) > distp3[m] + rcut_mb ) continue;
-	  cont_rep_ecalc(&er,&fr,r2,dist_rep2[m],krep);
-	  cont_gcalc(&eg,&fg,sqrt(r2),distp3[m],kcon_nat2[m],ksi1);
-	  fprintf(fp1,"%i %i %i %lf  %lf %lf %lf \n",m,i,j,d,er-eg,er,eg);
+	  im1 = jm1 = im2 = jm2 = -1;
+
+	  cont_rep_ecalc(&er,&fr,r2,distp4[m],krep);
+	  cont_att_ecalc(kcon_nat2[m],r,
+			 &eg,&eg1,&eg2,&fg,&fg1,&fg2,im1,jm1,im2,jm2,
+			 distp3[m],distg3[m],distg4[m],
+			 &rg1x,&rg1y,&rg1z,&rg2x,&rg2y,&rg2z);
+
+	  fprintf(fp1,"%i %i %i %lf  %lf %lf %lf \n",m,i,j,d,er+eg,er,eg);
 	} 
       }
 
@@ -1184,7 +1200,7 @@ double cont2(int iflag) {
   return 0;
 }
 /****************************************************************************/
-double cont_corr(int iflag) {
+/*double cont_corr_old(int iflag) {
   int s,m,n,i,j;
   double r,r2,rx,ry,rz;
   double e=0,er,fr;
@@ -1290,6 +1306,163 @@ double cont_corr(int iflag) {
   }
   
   if (iflag > 0) {    
+    return 0;
+  }
+  
+  return 0;
+  } */
+/****************************************************************************/
+double cont_corr(int iflag) {
+  int s,m,n,i,j;
+  double r,r2,rx,ry,rz;
+  double e = 0,fr,erA,frA,erB,frB;
+  static double rcut_mb;
+  FILE *fp1;
+
+  int im1A,jm1A,im2A,jm2A;
+  double egA,fgA;
+  double rg1xA,rg1yA,rg1zA,eg1A,fg1A;
+  double rg2xA,rg2yA,rg2zA,eg2A,fg2A;
+
+  int im1B,jm1B,im2B,jm2B;
+  double egB,fgB;
+  double rg1xB,rg1yB,rg1zB,eg1B,fg1B;
+  double rg2xB,rg2yB,rg2zB,eg2B,fg2B;
+
+  if (FF_CONT < 2)
+    return 0;
+  
+  if (!FF_MULTIBODY) {
+    printf("    cont_corr() only implemented for the case FF_MULTIBODY %i\nExiting...\n",FF_MULTIBODY);
+    exit(-1);
+  }
+
+  if (iflag < 0) {
+    rcut_mb = 3 * ksi1;
+
+    if (FF_MULTIBODY) {
+      fp1 = fopen("results/param_check/cont_param_shared.out","w");
+      for (s = 0; s < spair; ++s) {
+	m = mc1[s];
+	n = mc2[s];
+	
+	i = ip1[m];
+	j = ip2[m];
+
+	im1A = nni1[m]; jm1A = nnj1[m];
+	im2A = nni2[m]; jm2A = nnj2[m];
+	im1B = nni3[n]; jm1B = nnj3[n];
+	im2B = nni4[n]; jm2B = nnj4[n];
+
+	fprintf(fp1,"%i %i kcon %lf %lf dist %lf %lf %i %i %i %i %i %i %i %i distg %lf %lf %lf %lf\n",i,j,
+		kcon_nat[m],kcon_nat2[n],distp[m],distp3[n],
+		im1A,jm1A,im2A,jm2A,im1B,jm1B,im2B,jm2B,
+		distg1[m],distg2[m],
+		distg3[n],distg4[n]);
+      }
+      fclose(fp1);
+    }
+
+    return 0;
+  }
+
+  if (iflag == 0) {
+
+    for (s = 0; s < spair; ++s) {
+      m = mc1[s];
+      n = mc2[s];
+
+      i = ip1[m];
+      j = ip2[m];
+
+      r2 = vec2(i,j,&rx,&ry,&rz);
+
+      if (FF_MULTIBODY) {
+	if ( (r=sqrt(r2)) > distp[m] + rcut_mb  && r > distp3[n] + rcut_mb ) continue;
+
+	im1A = nni1[m]; jm1A = nnj1[m];
+	im2A = nni2[m]; jm2A = nnj2[m];
+
+	cont_rep_ecalc(&erA,&frA,r2,distp2[m],krep);
+	cont_att_ecalc(kcon_nat[m],r,
+		       &egA,&eg1A,&eg2A,&fgA,&fg1A,&fg2A,im1A,jm1A,im2A,jm2A,
+		       distp[m],distg1[m],distg2[m],
+		       &rg1xA,&rg1yA,&rg1zA,&rg2xA,&rg2yA,&rg2zA);
+	
+	im1B = nni3[n]; jm1B = nnj3[n];
+	im2B = nni4[n]; jm2B = nnj4[n];
+
+	cont_rep_ecalc(&erB,&frB,r2,distp4[n],krep);
+	cont_att_ecalc(kcon_nat2[n],r,
+		       &egB,&eg1B,&eg2B,&fgB,&fg1B,&fg2B,im1B,jm1B,im2B,jm2B,
+		       distp3[n],distg3[n],distg4[n],
+		       &rg1xB,&rg1yB,&rg1zB,&rg2xB,&rg2yB,&rg2zB);
+
+	if (erA + egA < erB + egB) {
+	  e += erA + egA;
+	  frA = frA + fgA;
+	  add_f(i,j,frA,rx,ry,rz);
+	  add_f(im1A,jm1A,fg1A,rg1xA,rg1yA,rg1zA);
+	  add_f(im2A,jm2A,fg2A,rg2xA,rg2yA,rg2zA);
+	} else {
+	  e += erB + egB;
+	  frB = frB + fgB;
+	  add_f(i,j,frB,rx,ry,rz);
+	  add_f(im1B,jm1B,fg1B,rg1xB,rg1yB,rg1zB);
+	  add_f(im2B,jm2B,fg2B,rg2xB,rg2yB,rg2zB);
+	} 
+      }
+    }
+    
+    return e;
+  }
+  
+  if (iflag > 0) {    
+    fp1 = fopen("results/param_check/cont_energy_corr.plot","w");
+    
+    for (s = 0; s < spair; ++s) {
+      m = mc1[s];
+      n = mc2[s];
+
+      i = ip1[m];
+      j = ip2[m];
+
+      for (r = 3.0; r < 20; r += 0.01) {
+	r2 = r * r;
+	
+	if ( r > distp[m] + rcut_mb && r > distp3[n] + rcut_mb ) continue;
+	
+	if (FF_MULTIBODY) {
+	  im1A = jm1A = im2A = jm2A = -1;
+	  im1B = jm1B = im2B = jm2B = -1;
+
+	  cont_rep_ecalc(&erA,&frA,r2,distp2[m],krep);
+	  cont_att_ecalc(kcon_nat[m],r,
+			 &egA,&eg1A,&eg2A,&fgA,&fg1A,&fg2A,im1A,jm1A,im2A,jm2A,
+			 distp[m],distg1[m],distg2[m],
+			 &rg1xA,&rg1yA,&rg1zA,&rg2xA,&rg2yA,&rg2zA);
+	  
+	  cont_rep_ecalc(&erB,&frB,r2,distp4[n],krep);
+	  cont_att_ecalc(kcon_nat2[n],r,
+			 &egB,&eg1B,&eg2B,&fgB,&fg1B,&fg2B,im1B,jm1B,im2B,jm2B,
+			 distp3[n],distg3[n],distg4[n],
+			 &rg1xB,&rg1yB,&rg1zB,&rg2xB,&rg2yB,&rg2zB);
+	  
+	  if (erA + egA < erB + egB) {
+	    e = erA + egA;
+	    fr = frA + fgA;
+	  } else {
+	    e = erB + egB;
+	    fr = frB + fgB;
+	  } 
+	
+	  fprintf(fp1,"%i %i %i %i %lf  %lf %lf %lf  %lf %lf %lf\n",
+		  m,n,i,j,r,erA+egA,erB+egB,e,frA+fgA,frB+fgB,fr);
+	}
+      }
+    }
+    
+    fclose(fp1);
     return 0;
   }
   
