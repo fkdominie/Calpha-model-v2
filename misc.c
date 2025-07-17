@@ -23,6 +23,7 @@ void read_cont_param(char fn[],int ip1[],int ip2[],int npair,double kcont[]);
 void set_bonded_param(double *bn,double *thn,double phn[],
 		      double *xnat,double *ynat,double *znat,int nnat);
 void write_bonded_param(double *bn,double *thn,double *phn,char *fn);
+void cont_param_salt(char fn[],int ip1[],int ip2[],int n,double kcont[]);
 void read_disregs(char fn[],int *dis);
 /****************************************************************************/
 /***** INPUT/OUTPUT *********************************************************/
@@ -814,6 +815,32 @@ void read_cont_param(char fn[],int ip1[],int ip2[],int npair,double kcont[]) {
   }
 }
 /****************************************************************************/
+void cont_param_salt(char fn[],int ip1[],int ip2[],int n,double kcont[]) {
+  int i,j,m;
+  double fac;
+  char str[100];
+  FILE *fp;
+
+  strcpy(str,TESTDIR);
+  strcat(str,"salt_fac_");
+  strcat(str,fn);
+
+  printf("<cont_param_salt> Writing to %s\n",str);
+  fp = fopen(str,"w");
+  for (m = 0; m < n; m++) {
+    i = ip1[m];
+    j = ip2[m];
+    
+    fac = csalt_fac(csalt,qres[i],qres[j]);
+    kcont[m] *= fac;
+    if (qres[i]*qres[j] == 0) continue;
+
+    fprintf(fp,"%3i %3i %3i %c %c qres %3i %3i saltfac %8.5lf kcon %8.5lf\n",
+	    m,i,j,seq[i],seq[j],qres[i],qres[j],fac,kcont[m]);
+  }
+  fclose(fp);
+}
+/****************************************************************************/
 /***** INITIALIZATION *******************************************************/
 /****************************************************************************/
 void init(int iflag) {
@@ -1071,14 +1098,9 @@ void init(int iflag) {
   if (FF_SALT) {
     printf("<init> FF_SALT %i \n",FF_SALT);
     printf("<init> csalt: %.2lf\n",csalt);
-    printf("<init> csalt_fac: (qi,qj = 1,1) %.2lf (qi,qj= 1,-1) %.2lf \n",
-	   csalt_fac(csalt,1,1),csalt_fac(csalt,1,-1));
-
-    for (m = 0; m < npair; m++)
-      kcon_nat[m] *= csalt_fac(csalt,qres[ip1[m]],qres[ip2[m]]);
-
-    for (m = 0; m < npair2; m++)
-      kcon_nat2[m] *= csalt_fac(csalt,qres[ip3[m]],qres[ip4[m]]);
+    printf("<init> Scaling contact strengths...\n");
+    cont_param_salt("1",ip1,ip2,npair,kcon_nat);
+    cont_param_salt("2",ip3,ip4,npair2,kcon_nat2);
   }
   
   /* BONDED INTERACTIONS */
