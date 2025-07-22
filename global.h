@@ -106,7 +106,7 @@ extern double tconstcr[];
 /************* miscellaneous ************************************************/
 extern double pi,pi2,pid2;
 extern double deg2rad,rad2deg;
-extern double cthmin,sthmin;
+extern double cthlim;
 extern int carterr,therr;
 extern long seed,orig_seed;
 extern char OUTDIR[];
@@ -196,7 +196,7 @@ void ch2box(int ich);
 void cr2box(int icr);
 //void ch2boxcr(int icr);
 void dof2cart(int iflag);
-int cart2dof(void);
+void cart2dof(void);
 /* utils.c */
 int read_native(char *fn,double *xr,double *yr,double *zr);
 int read_contacts(char *fn,int *ip1,int *ip2);

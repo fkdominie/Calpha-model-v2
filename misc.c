@@ -464,23 +464,19 @@ int get_shared_contacts(int *mc1,int *mc2,int *dual1,int *dual2) {
 /****************************************************************************/
 void get_natdist(double *dist,double *dist2,int *ip1,int *ip2,int n,
 		 double *xn,double *yn,double *zn) {
+  /* Get native distances (dist) and distances squared (dist2) */
   int i,j,m;
-  double r2,r2min = 1e6,r2max = 0;
+  double r2;
 
   for (m = 0; m < n; m++) {
     i = ip1[m]; j = ip2[m]; 
-    r2 = ((xn[i]-xn[j]) * (xn[i]-xn[j])+
-	  (yn[i]-yn[j]) * (yn[i]-yn[j])+ 
-	  (zn[i]-zn[j]) * (zn[i]-zn[j]));
-    if (r2 < r2min) r2min = r2; 
-    if (r2 > r2max) r2max = r2; 
+    r2 = ( (xn[i]-xn[j]) * (xn[i]-xn[j]) +
+	   (yn[i]-yn[j]) * (yn[i]-yn[j]) + 
+	   (zn[i]-zn[j]) * (zn[i]-zn[j]) );
     dist[m] = sqrt(r2);
     dist2[m] = r2;
   }
   
-  if (n > 0)
-    printf("<get_natdist> rmin %f rmax %f\n",sqrt(r2min),sqrt(r2max));
-
   return ;
 }
 /****************************************************************************/
@@ -663,12 +659,13 @@ void set_bonded_param(double *bn,double *thn,double *phn,
 
   for (i = 0; i < N; i++) {x[i] = xnat[i]; y[i] = ynat[i]; z[i] = znat[i];}
 
-  if (1 != cart2dof()) 
-    printf("<set_bonded_param> Error native configuration\n");
+  cart2dof();
 
   for (i = 0; i < N-1; i++)  bn[i] = b[i];
   for (i = 1; i < N-1; i++)  thn[i] = th[i];  
   for (i = 1; i < N-2; i++)  phn[i] = ph[i];
+
+  // if (1 != check_chains()) printf("<set_bonded_param> Error native configuration\n");
 }
 /****************************************************************************/
 void read_disregs(char fn[],int *dis) {
@@ -855,9 +852,9 @@ void init(int iflag) {
 
   fp1 = fopen(INPUT,"r");
   k = 0;
-  for (j=0; j<NCH; j++) {
+  for (j = 0; j < NCH; j++) {
     iBeg[j] = k;
-    while ((c=getc(fp1)) != '\n') {
+    while ( (c = getc(fp1)) != '\n' && feof(fp1) == 0 ) {
       if (c >= 'A' && c <= 'z') {
 	seq[k] = c;
 	a2c[k] = j;
@@ -895,7 +892,7 @@ void init(int iflag) {
   
   /* set seed */ 
 
-  if (ISEED == 1){
+  if (ISEED == 1) {
     FILE *devrandom = fopen("/dev/urandom", "r");
     n=fread(&seed, sizeof(seed), 1, devrandom);
     seed=-labs(seed%100000000);
@@ -911,21 +908,21 @@ void init(int iflag) {
 
   if (N > 0) {
     printf("Chains: \n");
-    for (j=0; j<NCH; j++) {
+    for (j = 0; j < NCH; j++) {
       printf("%3d %3d %3d ",j,iBeg[j],iEnd[j]);
-      for (i=iBeg[j]; i<=iEnd[j]; i++) printf("%c",seq[i]); 
+      for (i = iBeg[j]; i <= iEnd[j]; i++) printf("%c",seq[i]); 
       printf("\n");
     }
     printf("\n");
   }
   
   printf("Index  temp  beta  g:\n");
-  for (i=0; i<NTMP; i++) {
+  for (i = 0; i < NTMP; i++) {
     printf("%i %lf %lf %lf\n",i,1./beta[i], beta[i], g[i]);
   }
   printf("\n");
 
-  /* create results directory */
+  /* create directories */
 
   printf("<init> Creating directory %s\n",RESDIR);
   mkdir(RESDIR, 0777);
@@ -946,8 +943,7 @@ void init(int iflag) {
   pid2=pi/2.;
   deg2rad=pi/180.;
   rad2deg=180./pi;
-  cthmin=cos(pi/90.);
-  sthmin=sin(pi/90.);
+  cthlim=cos(pi/180.);
 
   /* energy parameters */
 
@@ -1031,31 +1027,24 @@ void init(int iflag) {
 
   npair = read_contacts(CONTMAP,ip1,ip2);
   printf("<init> CONTMAP:  Found %i contacts in %s\n",npair,CONTMAP);
-  printf("<init> CONTMAP:  "); get_natdist(distp,distp2,ip1,ip2,npair,xnat,ynat,znat);
+  get_natdist(distp,distp2,ip1,ip2,npair,xnat,ynat,znat);
   printf("<init> CONTMAP:  Writing to %s\n","contact_map.out");
   write_natdist("contact_map.out",distp,npair,ip1,ip2);
 
   npair2 = read_contacts(CONTMAP2,ip3,ip4);
   printf("<init> CONTMAP2: Found %i contacts in %s\n",npair2,CONTMAP2);
-  printf("<init> CONTMAP2: "); get_natdist(distp3,distp4,ip3,ip4,npair2,xnat2,ynat2,znat2);
+  get_natdist(distp3,distp4,ip3,ip4,npair2,xnat2,ynat2,znat2);
   printf("<init> CONTMAP2: Writing to %s\n","contact_map2.out");
   write_natdist("contact_map2.out",distp3,npair2,ip3,ip4);
 
   if (FF_DISULF) {
     ndpair = read_contacts(DISULFIDE,id1,id2);
-    printf("<init> FF_DISULF %i \n",FF_DISULF);
+    printf("<init> DISULFIDE: FF_DISULF %i \n",FF_DISULF);
     printf("<init> DISULFIDE: Found %i contacts in %s \n",ndpair,DISULFIDE);
-    printf("<init> DISULFIDE: "); get_natdist(distd1,fdum,id1,id2,ndpair,xnat,ynat,znat);
-    write_natdist("disulf.out",distd1,ndpair,id1,id2);
-    if (FF_DISULF == 2) {
-      printf("<init> DISULFIDE: "); get_natdist(distd2,fdum,id1,id2,ndpair,xnat2,ynat2,znat2);
-      write_natdist("disulf2.out",distd2,ndpair,id1,id2);
-    }
-    for (n = 0; n < ndpair; n++) {
-      printf("<init> DISULFIDE: %4i %4i %10.5lf ",id1[n],id2[n],distd1[n]);
-      if (FF_DISULF == 2) printf("%10.5lf",distd2[n]);
-      printf("\n");
-    }
+    get_natdist(distd1,fdum,id1,id2,ndpair,xnat,ynat,znat);
+    get_natdist(distd2,fdum,id1,id2,ndpair,xnat2,ynat2,znat2);
+    for (n = 0; n < ndpair; n++) 
+      printf("<init> DISULFIDE: %4i %4i nat %8.5lf   nat2 %8.5lf\n",id1[n],id2[n],distd1[n],distd2[n]);
   }
 
   if (npair  > MAXP) {printf("npair too big\n"); exit(-1);}
@@ -1082,9 +1071,9 @@ void init(int iflag) {
     }
     spair = get_shared_contacts(mc1,mc2,dual1,dual2);
     write_shared_dist("common_contacts.out",mc1,mc2,spair);
-    printf("Looking for clashes in NATIVE2 (%s) due to dual basin potential...\n",NATIVE2);
+    printf("Looking for potential clashes in NATIVE2 (%s) due to dual basin potential...\n",NATIVE2);
     check_distances(ip1,ip2,npair,distp2,dual1,xnat2,ynat2,znat2);
-    printf("Looking for clashes in NATIVE (%s) due to dual basin potential...\n",NATIVE);
+    printf("Looking for potential clashes in NATIVE (%s) due to dual basin potential...\n",NATIVE);
     check_distances(ip3,ip4,npair2,distp4,dual2,xnat,ynat,znat);
   }
 
@@ -1093,11 +1082,11 @@ void init(int iflag) {
   read_cont_param(CONTPAR,ip1,ip2,npair,kcon_nat);
   read_cont_param(CONTPAR2,ip3,ip4,npair2,kcon_nat2);
 
-  /* Effective screening of contacts between charged residues */
+  /* Effective screening of contacts between charged residues (salt effect) */
   
   if (FF_SALT) {
     printf("<init> FF_SALT %i \n",FF_SALT);
-    printf("<init> csalt: %.2lf\n",csalt);
+    printf("<init> csalt: %.5lf\n",csalt);
     printf("<init> Scaling contact strengths...\n");
     cont_param_salt("1",ip1,ip2,npair,kcon_nat);
     cont_param_salt("2",ip3,ip4,npair2,kcon_nat2);
@@ -1141,13 +1130,15 @@ void init(int iflag) {
 
     printf("<init> Initializing chain(s) from NATIVE %s\n",NATIVE);
     for (i = 0; i < N; i++) {x[i] = xnat[i]; y[i] = ynat[i]; z[i] = znat[i];}
-    if (1 != cart2dof()) printf("Error initial configuration");
+    cart2dof();
+    //    if (1 != check_chains()) printf("Error initial configuration"); 
 
   } else if (ISTART == 1) {     /* read */
 
     printf("<init> Initializing chain(s) from START %s\n",START);
     read_native(START,x,y,z);
-    if (1 != cart2dof()) printf("Error initial configuration 2\n");
+    cart2dof();
+    //    if (1 != check_chains()) printf("Error initial configuration 2\n");
 
   } else if (ISTART == 2) {     /* random */
 
@@ -1175,55 +1166,56 @@ void init(int iflag) {
 
   /* initialize velocities */
   
-  vxsum=vysum=vzsum=0;
-  for (i=0;i<N;i++) {
-    vx[i]=sqrt(1/beta[ind]/mbd)*gasdev2();
-    vy[i]=sqrt(1/beta[ind]/mbd)*gasdev2();
-    vz[i]=sqrt(1/beta[ind]/mbd)*gasdev2();
-    vxsum+=vx[i];
-    vysum+=vy[i];
-    vzsum+=vz[i];
+  vxsum = vysum = vzsum = 0;
+  for (i = 0; i < N; i++) {
+    vx[i] = sqrt(1./beta[ind]/mbd) * gasdev2();
+    vy[i] = sqrt(1./beta[ind]/mbd) * gasdev2();
+    vz[i] = sqrt(1./beta[ind]/mbd) * gasdev2();
+    vxsum += vx[i];
+    vysum += vy[i];
+    vzsum += vz[i];
   }
 
-  vxcsum=vycsum=vzcsum=0;
-  for (i=0;i<NCR;i++) {
-    vxc[i]=sqrt(1/beta[ind]/mcr)*gasdev2();
-    vyc[i]=sqrt(1/beta[ind]/mcr)*gasdev2();
-    vzc[i]=sqrt(1/beta[ind]/mcr)*gasdev2();
-    vxcsum+=vxc[i];
-    vycsum+=vyc[i];
-    vzcsum+=vzc[i];
+  vxcsum = vycsum = vzcsum = 0;
+  for (i = 0; i < NCR; i++) {
+    vxc[i] = sqrt(1./beta[ind]/mcr) * gasdev2();
+    vyc[i] = sqrt(1./beta[ind]/mcr) * gasdev2();
+    vzc[i] = sqrt(1./beta[ind]/mcr) * gasdev2();
+    vxcsum += vxc[i];
+    vycsum += vyc[i];
+    vzcsum += vzc[i];
   }
 
-  Ekin=0;
-  for (i=0;i<N;i++) {
-    vx[i]-=vxsum / max(N,1);
-    vy[i]-=vysum / max(N,1);
-    vz[i]-=vzsum / max(N,1);
-    Ekin+=vx[i]*vx[i]+vy[i]*vy[i]+vz[i]*vz[i];
+  Ekin = 0;
+  for (i = 0; i < N; i++) {
+    vx[i] -= vxsum / max(N,1);
+    vy[i] -= vysum / max(N,1);
+    vz[i] -= vzsum / max(N,1);
+    Ekin += vx[i]*vx[i]+vy[i]*vy[i]+vz[i]*vz[i];
   }
-  for (i=0;i<NCR;i++) {
-    vxc[i]-=vxcsum / max(NCR,1);
-    vyc[i]-=vycsum / max(NCR,1);
-    vzc[i]-=vzcsum / max(NCR,1);
-    Ekin+=vxc[i]*vxc[i]+vyc[i]*vyc[i]+vzc[i]*vzc[i];
+  for (i = 0; i < NCR; i++) {
+    vxc[i] -= vxcsum / max(NCR,1);
+    vyc[i] -= vycsum / max(NCR,1);
+    vzc[i] -= vzcsum / max(NCR,1);
+    Ekin += vxc[i]*vxc[i]+vyc[i]*vyc[i]+vzc[i]*vzc[i];
   }
-  Ekin*=0.5;
+  Ekin *= 0.5;
   
   /* initial energies and forces */
   
-  for (i = 0; i<N; i++) fx[i]=fy[i]=fz[i]=0;
+  for (i = 0; i < N; i++) fx[i]=fy[i]=fz[i]=0;
   for (i = 0; i < NCR; i++) fxc[i]=fyc[i]=fzc[i]=0;
-    Epot=(Ebon=bond(0))+(Eben=bend(0))+(Erep=exvol(0))+(Etor=torsion(0))+
-      (Econ=cont(0))+(Ecc=crowd_crowd(0))+(Ecb=crowd_bead(0));
 
-  for (i=0;i<NCR;i++) {
+  Epot=(Ebon=bond(0))+(Eben=bend(0))+(Erep=exvol(0))+(Etor=torsion(0))+
+    (Econ=cont(0))+(Ecc=crowd_crowd(0))+(Ecb=crowd_bead(0));
+
+  for (i = 0; i < NCR; i++) {
     frcdx[i] = gasdev2() * tconstcr[ind];
     frcdy[i] = gasdev2() * tconstcr[ind];
     frcdz[i] = gasdev2() * tconstcr[ind];
   }
   
-  for (i=0;i<N;i++) {
+  for (i = 0; i < N; i++) {
     frdx[i] = gasdev2() * tconstbd[ind];
     frdy[i] = gasdev2() * tconstbd[ind];
     frdz[i] = gasdev2() * tconstbd[ind];
@@ -1250,7 +1242,7 @@ void init(int iflag) {
   cont(1);
   cont2(1);
   crowd_crowd(1);
-  crowd_bead(1);  
+  crowd_bead(1); 
   
   return ;
 }

@@ -87,8 +87,8 @@ void ch2box(int ich) {
   int i,n,nx,ny,nz;
   double xcm,ycm,zcm;
   
-  xcm=ycm=zcm=n=0;
-  for (i=iBeg[ich]; i<=iEnd[ich]; ++i) {
+  xcm = ycm = zcm = n = 0;
+  for (i = iBeg[ich]; i <= iEnd[ich]; ++i) {
     xcm += x[i];
     ycm += y[i];
     zcm += z[i];
@@ -99,7 +99,7 @@ void ch2box(int ich) {
   ycm /= n;
   zcm /= n;
 
-  nx=ny=nz=0;
+  nx = ny = nz = 0;
   while (xcm + nx*BOX > BOX) --nx;
   while (xcm + nx*BOX < 0) ++nx; 
   while (ycm + ny*BOX > BOX) --ny;
@@ -107,7 +107,7 @@ void ch2box(int ich) {
   while (zcm + nz*BOX > BOX) --nz;
   while (zcm + nz*BOX < 0) ++nz; 
 
-  for (i=iBeg[ich]; i<=iEnd[ich]; ++i) {
+  for (i = iBeg[ich]; i <= iEnd[ich]; ++i) {
     x[i] += nx*BOX;
     y[i] += ny*BOX;
     z[i] += nz*BOX;
@@ -138,7 +138,7 @@ void dof2cart(int iflag) {
   
   if (iflag < 0) {
     printf("<dof2cart> init\n");
-    for (l=0; l<NCH; ++l) {
+    for (l = 0; l < NCH; ++l) {
       k = iBeg[l];
       x[k] = BOX * ran3n(&seed);
       y[k] = BOX * ran3n(&seed);
@@ -158,7 +158,7 @@ void dof2cart(int iflag) {
     return ;
   }
   
-  for (l=0; l<NCH; ++l) {
+  for (l = 0; l < NCH; ++l) {
     k = iBeg[l];
 
     bx[k] = x[k+1] - x[k];
@@ -179,7 +179,7 @@ void dof2cart(int iflag) {
     by[k] /= renorm;
     bz[k] /= renorm;
     
-    for (k=iBeg[l]; k<iEnd[l]; ++k) {
+    for (k = iBeg[l]; k < iEnd[l]; ++k) {
       if (k > iBeg[l] + 1) {
 	j=k-1;
 	i=k-2;
@@ -216,78 +216,92 @@ void dof2cart(int iflag) {
   }
 }
 /****************************************************************************/
-int cart2dof(void) {
-  int i,j,k,ok=1;
+void cart2dof(void) {
+  int i,j,k;
   double b1x,b1y,b1z,b1;
   double b2x,b2y,b2z;
   double ux,uy,uz,u;
-  double tmp1;
+  double tmp;
 
   /* bond vectors */
 
-  for (k=0; k<NCH; k++) {
-    for (i=iBeg[k]; i<iEnd[k]; i++) {
-      j=i+1;
-      b1x=x[j]-x[i];
-      b1y=y[j]-y[i];
-      b1z=z[j]-z[i];
-      b1=sqrt(b1x*b1x+b1y*b1y+b1z*b1z);
+  for (k = 0; k < NCH; k++) {
+    for (i = iBeg[k]; i < iEnd[k]; i++) {
+      j = i + 1;
+
+      b1x = x[j] - x[i];
+      b1y = y[j] - y[i];
+      b1z = z[j] - z[i];
+      b1 = sqrt(b1x * b1x + b1y * b1y + b1z * b1z);
       
-      bx[i]=b1x/b1;
-      by[i]=b1y/b1;
-      bz[i]=b1z/b1;
-      b[i]=b1;
-      
-      if (b1>5.0 || b1<2.0) {ok=0; fprintf(fp_log,"cart2dof bond: i %i %lf\n",i,b1);}
+      bx[i] = b1x / b1;
+      by[i] = b1y / b1;
+      bz[i] = b1z / b1;
+      b[i] = b1;
+       
+      if (b1 > 5.0 || b1 < 2.0) 
+	fprintf(fp_log,"cart2dof bond: i %i %lf\n",i,b1);
     }    
   }
 
   /* bond angles */
 
-  for (k=0; k<NCH; k++) {
-    for (i=iBeg[k]+1; i<iEnd[k]; i++) {
-      b1x=bx[i-1];
-      b1y=by[i-1];
-      b1z=bz[i-1];
+  for (k = 0; k < NCH; k++) {
+    for (i = iBeg[k] + 1; i < iEnd[k]; i++) {
 
-      b2x=bx[i];
-      b2y=by[i];
-      b2z=bz[i];
+      b1x = bx[i-1];
+      b1y = by[i-1];
+      b1z = bz[i-1];
+
+      b2x = bx[i];
+      b2y = by[i];
+      b2z = bz[i];
     
-      tmp1 = b1x*b2x + b1y*b2y + b1z*b2z;
+      tmp = b1x * b2x + b1y * b2y + b1z * b2z;
       
-      if (tmp1 < -1.0) {tmp1 = -1.0; ok=0; fprintf(fp_log,"cart2dof bend: i %i  tmp1 %f\n",i, tmp1); }
-      if (tmp1 >  1.0) {tmp1 =  1.0; ok=0; fprintf(fp_log,"cart2dof bend: i %i  tmp1 %f\n",i, tmp1); }
-      th[i] = pi - acos(tmp1);
+      if (tmp > cthlim || tmp < -cthlim) {
+	fprintf(fp_log,"cart2dof bend: i %i tmp %le ",i,tmp);
+	fprintf(fp_log,"thn %lf thn2 %lf\n",thn[i]*rad2deg,thn2[i]*rad2deg);
+	fflush(fp_log);
+	tmp = min(tmp,cthlim);
+	tmp = max(tmp,-cthlim);
+      }
+
+      th[i] = pi - acos(tmp);
       
-      ux=b1y*b2z-b1z*b2y;
-      uy=b1z*b2x-b1x*b2z;
-      uz=b1x*b2y-b1y*b2x;
-      u=sqrt(ux*ux+uy*uy+uz*uz);
-      
-      sx[i]=ux/u;
-      sy[i]=uy/u;
-      sz[i]=uz/u;
+      ux = b1y * b2z - b1z * b2y;
+      uy = b1z * b2x - b1x * b2z;
+      uz = b1x * b2y - b1y * b2x;
+      u = sqrt(ux * ux + uy * uy + uz * uz);
+       
+      sx[i] = ux / u;
+      sy[i] = uy / u;
+      sz[i] = uz / u;
     }
   }
  
   /* torsion angles */
   
-  for (k=0; k<NCH; k++) {
-    for (i=iBeg[k]+1; i<iEnd[k]-1; i++) {
-      j=i+1;
+  for (k = 0; k < NCH; k++) {
+    for (i = iBeg[k] + 1; i < iEnd[k] - 1; i++) {
+      j = i + 1;
       
-      tmp1 = sx[i]*sx[j] + sy[i]*sy[j] + sz[i]*sz[j];
-      if (tmp1 < -1.0) {tmp1 = -1.0; ok=0; fprintf(fp_log,"cart2dof tors: i %i  tmp1 %f\n",i, tmp1); }
-      if (tmp1 >  1.0) {tmp1 =  1.0; ok=0; fprintf(fp_log,"cart2dof tors: i %i  tmp1 %f\n",i, tmp1); }
+      tmp = sx[i] * sx[j] + sy[i] * sy[j] + sz[i] * sz[j];
+
+      if (tmp > 1.0 || tmp < -1.0) {
+	fprintf(fp_log,"cart2dof tors: i %i tmp %le ",i,tmp);
+	fprintf(fp_log,"phn %lf phn2 %lf th %lf th %lf\n",
+		phn[i]*rad2deg,phn2[i]*rad2deg,th[i]*rad2deg,th[j]*rad2deg); 
+	tmp = min(tmp, 1.0);
+	tmp = max(tmp,-1.0);
+      }
       
-      if ((sx[i]*bx[j]+sy[i]*by[j]+sz[i]*bz[j])>0.0)
-	ph[i]=acos(tmp1);
+      if ( (sx[i] * bx[j] + sy[i] * by[j] + sz[i] * bz[j]) >= 0)
+	ph[i] = acos(tmp);
       else
-	ph[i]=-acos(tmp1);
+	ph[i] = -acos(tmp);
     }
   }
 
-  return ok;
 }
 /****************************************************************************/

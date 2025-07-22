@@ -21,14 +21,13 @@ double thn_disb=117.0;             /* angle (sheet)                         */
 double ksi_disa=4.0;               /* angle parameter                       */
 double ksi_disb=12.0;              /* angle parameter                       */
 double eth0=0.13;                  /* angle energy shift                    */
-double kph_dis1=0.5;              /* torsion energy strength               */ 
-double kph_dis2=0.8;              /* torsion energy strength               */
-double kph_dis3=0.25;             /* torsion energy strength               */
+double kph_dis1=0.5;               /* torsion energy strength               */ 
+double kph_dis2=0.8;               /* torsion energy strength               */
+double kph_dis3=0.25;              /* torsion energy strength               */
 double phn_dis1=180;               /* torsion reference angle               */
 double phn_dis2=55;                /* torsion reference angle               */
 double phn_dis3=25;                /* torsion reference angle               */
 double eph0=-0.44;                 /* torsion shift                         */
-double fscal=1.16;                 /* torsion scale factor                  */
 /* crowders: */
 const double rcrowd = 12.0;        /* Crowder radius                        */
 const double srefcr = 3.0;         /* Crowder repulsion softness (sigma)    */

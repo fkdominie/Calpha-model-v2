@@ -56,9 +56,9 @@ double distg3[MAXP];               /* distances                             */
 double distg4[MAXP];               /* distances                             */
 short cc[N][N];                    /* 1 native contact, 0 otherwise         */
 /************* sequence effects *********************************************/
-int seq[N];                        /* sequence                              */
-/************** extra *******************************************************/
-double cthmin,sthmin;
+int seq[N];                        /* amino acid sequence                   */
+/************* auxiliary ****************************************************/
+double cthlim;
 /****************************************************************************/
 double cellcalc(int inc,int nl,short list[]);
 void log_sum_merge(double e1, double e2, double *e,
@@ -309,8 +309,8 @@ void bond_ecalc(double *e,double *f,double db) {
 /****************************************************************************/
 double bond(int iflag) {
   int i,j,k;
-  double fb,fb1 = 0,fb2 = 0;
-  double e = 0,e1 = 0,e2 = 0,et,bb,db,db2,r;
+  double fb,fb1=0,fb2=0;
+  double e=0,e1=0,e2=0,et,bb,db,db2,r;
   double dx,dy,dz;
   static double bet=10.0;
   FILE *fp;
@@ -319,12 +319,13 @@ double bond(int iflag) {
     return 0;
 
   if (iflag < 0) {
-    printf("<bond> bet %lf\n",bet);
+    if (FF_BOND > 1) printf("<bond> bet %lf\n",bet);
     printf("<bond> kbon %f \n",kbon);    
     return 0;
   }
 
   if (iflag == 0) {
+
     for (k = 0; k < NCH; ++k) {
       for (i = iBeg[k]; i < iEnd[k]; ++i) {
 	j = i + 1;
@@ -373,8 +374,8 @@ double bond(int iflag) {
   }
 
   if (iflag > 0) {
-    
     fp = fopen("results/param_check/bond_energy.plot","w");
+
     for (k = 0; k < NCH; ++k) {
       for (i = iBeg[k]; i < iEnd[k]; ++i) {
     
@@ -403,9 +404,8 @@ double bond(int iflag) {
 	}
       }
     }
+
     fclose(fp);
-    
-    return 0;
   }
 
   return 0;
@@ -443,7 +443,7 @@ double bend(int iflag) {
   double dkx,dky,dkz;
   double cth,sth;
   double e = 0,e1,e2,et,fben,fben1,fben2,d;
-  static double bet=5.0;
+  static double bet = 5.0;
   FILE *fp;
 
   if (FF_BEND == 0)
@@ -456,8 +456,9 @@ double bend(int iflag) {
   }
   
   if (iflag == 0) {
-    for (l=0; l<NCH; ++l) {
-      for (i=iBeg[l]; i<iEnd[l]-1; ++i) {
+
+    for (l = 0; l < NCH; ++l) {
+      for (i = iBeg[l]; i < iEnd[l] - 1; ++i) {
 	j = i + 1;
 	k = i + 2;
 	
@@ -478,40 +479,35 @@ double bend(int iflag) {
 	
 	e += et;
 	
-	cth = max(cos(th[j]),-cthmin);
-	sth = max(sin(th[j]),sthmin);
+	cth = cos(th[j]);
+	sth = sin(th[j]);
+	
+	b1x = bx[i];
+	b1y = by[i];
+	b1z = bz[i];
+	b1 = b[i];
 
-	if (sin(th[j]) < sthmin) {
-	  fprintf(fp_log,"bend : j %i th %lf thn %lf %lf\n",j,th[j]*rad2deg,thn[j]*rad2deg,thn2[j]*rad2deg);
-	  fflush(fp_log);
-	  therr++;
-	}
+	b2x = bx[j];
+	b2y = by[j];
+	b2z = bz[j];
+	b2 = b[j];
 	
-	b1x=bx[i];
-	b1y=by[i];
-	b1z=bz[i];
-	b1=b[i];
-	b2x=bx[j];
-	b2y=by[j];
-	b2z=bz[j];
-	b2=b[j];
+	dix = -(b2x+cth*b1x)/sth/b1;
+	diy = -(b2y+cth*b1y)/sth/b1;
+	diz = -(b2z+cth*b1z)/sth/b1;
+	dkx =  (b1x+cth*b2x)/sth/b2;
+	dky =  (b1y+cth*b2y)/sth/b2;
+	dkz =  (b1z+cth*b2z)/sth/b2;
 	
-	dix=-(b2x+cth*b1x)/sth/b1;
-	diy=-(b2y+cth*b1y)/sth/b1;
-	diz=-(b2z+cth*b1z)/sth/b1;
-	dkx=(b1x+cth*b2x)/sth/b2;
-	dky=(b1y+cth*b2y)/sth/b2;
-	dkz=(b1z+cth*b2z)/sth/b2;
-	
-	fx[i]+=fben*dix;
-	fy[i]+=fben*diy;
-	fz[i]+=fben*diz;
-	fx[j]+=fben*(-dix-dkx);
-	fy[j]+=fben*(-diy-dky);
-	fz[j]+=fben*(-diz-dkz);
-	fx[k]+=fben*dkx;
-	fy[k]+=fben*dky;
-	fz[k]+=fben*dkz;
+	fx[i] += fben*dix;
+	fy[i] += fben*diy;
+	fz[i] += fben*diz;
+	fx[j] += fben*(-dix-dkx);
+	fy[j] += fben*(-diy-dky);
+	fz[j] += fben*(-diz-dkz);
+	fx[k] += fben*dkx;
+	fy[k] += fben*dky;
+	fz[k] += fben*dkz;
       }
     }
 
@@ -521,9 +517,9 @@ double bend(int iflag) {
   if (iflag > 0)  {
     fp = fopen("results/param_check/bend_energy.plot","w");
     
-    for (l=0; l<NCH; ++l) {
-      for (i=iBeg[l]; i<iEnd[l]-1; ++i) {
-	j=i+1;
+    for (l = 0; l < NCH; ++l) {
+      for (i = iBeg[l]; i < iEnd[l]-1; ++i) {
+	j = i + 1;
 
 	for (d = 0; d < pi; d += pi/180) {
 
@@ -543,6 +539,7 @@ double bend(int iflag) {
 
 	    fprintf(fp,"%i %lf  %lf %lf %lf  %lf %lf %lf\n",j,d*rad2deg,e1,e2,et,
 		    fben1,fben2,fben);
+
 	    continue;
 	  }
 
@@ -550,27 +547,26 @@ double bend(int iflag) {
 	}
       }
     }
-
-    return 0;
   }
   
   return 0;
 }
 /****************************************************************************/
 void tors_ecalc_dis(double *e,double *f,double phval) {
-  /* V(x) = k1(1-cos(dph)) + k2(1-cos(2dph)) + k3(1-cos(3dph)) shifted (eth0)
-     and scaled (fscal). Returns (*e) = V(x) and (*f) = -V'(x). */
+  /* V(x) = k1(1-cos(dph)) + k2(1-cos(2dph)) + k3(1-cos(3dph)) + eth0. Returns
+     (*e) = V(x) and (*f) = -V'(x). The shift eth0 can be set to ensure the
+     minimum of V is zero. */
 
   double dph1 = phval - phn_dis1;
   double dph2 = 2 * (phval - phn_dis2);
   double dph3 = 3 * (phval - phn_dis3);
   
-  (*e) = fscal * (kph_dis1 * (1 - cos(dph1)) +
-		  kph_dis2 * (1 - cos(dph2)) +
-		  kph_dis3 * (1 - cos(dph3)) + eph0);
-  (*f) = - fscal * (kph_dis1 * sin(dph1) +
-		    kph_dis2 * 2 * sin(dph2) +
-		    kph_dis3 * 3 * sin(dph3)); 
+  (*e) = ( kph_dis1 * (1 - cos(dph1)) +
+	   kph_dis2 * (1 - cos(dph2)) +
+	   kph_dis3 * (1 - cos(dph3)) + eph0 );
+  (*f) = - ( kph_dis1 * sin(dph1) +
+	     kph_dis2 * 2 * sin(dph2) +
+	     kph_dis3 * 3 * sin(dph3) ); 
 }
 /****************************************************************************/
 void tors_ecalc(double *e,double *f,double dph) {
@@ -603,6 +599,7 @@ double torsion(int iflag) {
   }
   
   if (iflag == 0) {
+
     for (m = 0; m < NCH; ++m) {
       for (i = iBeg[m]; i < iEnd[m] - 2; ++i) {
 	j = i + 1;
@@ -626,10 +623,10 @@ double torsion(int iflag) {
 	
 	e += et;
 	
-      	cth1=max(cos(th[j]),-cthmin);
-	sth1=max(sin(th[j]),sthmin);
-	cth2=max(cos(th[k]),-cthmin);
-	sth2=max(sin(th[k]),sthmin);
+	cth1=cos(th[j]);
+	sth1=sin(th[j]);
+	cth2=cos(th[k]);
+	sth2=sin(th[k]);
 	
 	b1=b[i]; 
 	b2=b[j]; 
@@ -661,9 +658,9 @@ double torsion(int iflag) {
 	fy[l]+=fph*dly;
 	fz[l]+=fph*dlz;
       }
-
-      return e;
     }
+    
+    return e;
   }
 
   if (iflag > 0) { /* print potential function */
@@ -671,6 +668,7 @@ double torsion(int iflag) {
     double d;
     
     fp = fopen("results/param_check/tors_energy.plot","w");
+
     for (m = 0; m < NCH; ++m) {
       for (i = iBeg[m]; i < iEnd[m] - 2; ++i) {
 	j = i + 1;
@@ -705,8 +703,6 @@ double torsion(int iflag) {
     }
     
     fclose(fp);
-    
-    return 0;
   }
   
   return 0;
@@ -730,7 +726,7 @@ double exvol(int iflag)
     return 0;
 
   if (iflag < 0) {
-    for (i=0; i<MAXCELL; ++i) cell[i]=-1;
+    for (i = 0; i < MAXCELL; ++i) cell[i] = -1;
 
     ns = BOX / cut;
     h2 = ns*ns; 
@@ -746,7 +742,7 @@ double exvol(int iflag)
   }
 
   in2box();
-  for (i=N-1; i>=0; --i) {
+  for (i = N-1; i >= 0; --i) {
     ix=xb[i]/cutg; iy=yb[i]/cutg; iz=zb[i]/cutg;
     ic=ix+ns*(iy+ns*iz);
     pnt[i]=cell[ic];
@@ -1009,10 +1005,11 @@ double cont(int iflag) {
   }
 
   if (iflag == 0) {
+
     for (m = 0; m < npair; m++) {
       if (dual1[m] > 0) continue;
+      i = ip1[m]; j = ip2[m];
 
-      i=ip1[m]; j=ip2[m];
       r2 = vec2(i,j,&rx,&ry,&rz);
 
       if (!FF_MULTIBODY) {
@@ -1024,6 +1021,7 @@ double cont(int iflag) {
       
       if (FF_MULTIBODY) {
 	if ( (r = sqrt(r2)) > distp[m] + rcut_mb ) continue;
+
 	im1 = nni1[m]; jm1 = nnj1[m];
 	im2 = nni2[m]; jm2 = nnj2[m];
 
@@ -1040,11 +1038,12 @@ double cont(int iflag) {
 	add_f(im1,jm1,fg1,rg1x,rg1y,rg1z);
 	add_f(im2,jm2,fg2,rg2x,rg2y,rg2z);
       }
+
     }
 
     Econ1 = e;
     
-    if (FF_CONT == 2 && iflag == 0) {
+    if (FF_CONT == 2) {
       e += (Econ2 = cont2(0));
       e += (Ecorr = cont_corr(0));
     }
@@ -1085,7 +1084,6 @@ double cont(int iflag) {
     }
 
     fclose(fp1);
-    return 0;
   }
 
   return 0;
@@ -1107,9 +1105,8 @@ double cont2(int iflag) {
   if (iflag < 0) {
     rcut_mb = 3 * ksi1;
 
-    if (FF_MULTIBODY == 1)  {
+    if (FF_MULTIBODY == 1) 
       printf("<cont2> cutoff %lf \n",rcut_mb);
-    }
 
     fp1 = fopen("results/param_check/cont_param2.out","w");
     for (m = 0; m < npair2; m++) {
@@ -1126,9 +1123,10 @@ double cont2(int iflag) {
   }
 
   if (iflag == 0) {
+
     for (m = 0; m < npair2; m++) {
       if (dual2[m] > 0) continue;
-      i=ip3[m]; j=ip4[m];
+      i = ip3[m]; j = ip4[m];
 
       r2 = vec2(i,j,&rx,&ry,&rz);
 
@@ -1194,7 +1192,6 @@ double cont2(int iflag) {
     }
     
     fclose(fp1);
-    return 0;
   }
   
   return 0;
@@ -1376,9 +1373,10 @@ double cont_corr(int iflag) {
       j = ip2[m];
 
       r2 = vec2(i,j,&rx,&ry,&rz);
+      r = sqrt(r2);
 
       if (FF_MULTIBODY) {
-	if ( (r=sqrt(r2)) > distp[m] + rcut_mb  && r > distp3[n] + rcut_mb ) continue;
+	if ( (r > distp[m] + rcut_mb)  && (r > distp3[n] + rcut_mb) ) continue;
 
 	im1A = nni1[m]; jm1A = nnj1[m];
 	im2A = nni2[m]; jm2A = nnj2[m];
@@ -1463,7 +1461,6 @@ double cont_corr(int iflag) {
     }
     
     fclose(fp1);
-    return 0;
   }
   
   return 0;

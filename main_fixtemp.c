@@ -70,7 +70,9 @@ int main (int argc,char *argv[])
       o[22] = no_cont(1);
       o[23] = no_cont2(1);
       o[24] = no_cont2_ch2ch(0,1);
-
+      o[25] = dist_disulf(0);
+      o[26] = dist_disulf(1);
+      
       /* single chain */
       /*      o[14] = rg1;
 	      o[15] = rg2;
