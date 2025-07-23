@@ -1,8 +1,8 @@
 /************* simulation settings ******************************************/
 # define NTMP 1                    /* # temperatures                        */
-# define TMAX 0.92                 /* max temperature                       */
-# define TMIN 0.92                 /* min temperature                       */
-# define BOX 150                   /* simulation box                        */
+# define TMAX 1.02                 /* max temperature                       */
+# define TMIN 1.02                 /* min temperature                       */
+# define BOX 300                   /* simulation box                        */
 # define ISTART 0                  /* 0 native, 1 read, 2 random            */
 # define ISEED 1                   /* 1 randomize seed (/dev/urandom)       */
 /************* MD parameters ************************************************/
@@ -23,21 +23,21 @@
 # define FF_CONT 2                 /* cont() -- 1 on, 2 dual, 0 off         */
 # define FF_EXVOL 1                /* exvol()-- 1 on, 0 off                 */
 # define FF_DISULF 2               /* disulfide bonds -- 1 on, 2 dual, 0 off*/
-# define FF_MULTIBODY 1            /* multibody effects -- 1 on, 0 off      */
+# define FF_MULTIBODY 2            /* multibody effects -- 1 on, 0 off      */
 # define FF_SALT 0                 /* screening effect (csalt) -- 1 on 0 off*/
 /************* measurements *************************************************/
 # define NBIN 200                  /* # bins                                */
 # define NOBS 27                   /* # observables                         */
-# define MAXCELL 25000             /* max # cells                           */
+# define MAXCELL 100000            /* max # cells                           */
 # define MAXP 500                  /* max # contact pairs                   */
 # define SNAP1 5000                /* write snapshots to directory SNAPDIR  */
 # define SNAP2 5000                /* for interval SNAP1 < imd < SNAP2      */
 # define RMSD 2                    /* 1 NATIVE, 2 NATIVE2, 0 off            */
 /************* files input **************************************************/
 # define NATIVE "native_1j8i_model1"
-# define NATIVE2 "native_2jp1_fullchain_swap"
+# define NATIVE2 "native_2jp1_fullchain"
 # define CONTMAP "smog_1j8i_r9-68_mirror_extra_20-24_9-46"
-# define CONTMAP2 "smog_2jp1_r8-52_sym_intrachain"
+# define CONTMAP2 "smog_2jp1_r8-52_sym"
 # define DISULFIDE "disulfide"
 # define START "native_1j8i_model1" 
 # define INPUT "input"

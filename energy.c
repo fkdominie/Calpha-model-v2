@@ -553,9 +553,9 @@ double bend(int iflag) {
 }
 /****************************************************************************/
 void tors_ecalc_dis(double *e,double *f,double phval) {
-  /* V(x) = k1(1-cos(dph)) + k2(1-cos(2dph)) + k3(1-cos(3dph)) + eth0. Returns
-     (*e) = V(x) and (*f) = -V'(x). The shift eth0 can be set to ensure the
-     minimum of V is zero. */
+  /* V(x) = k1(1-cos(dph)) + k2(1-cos(2dph)) + k3(1-cos(3dph)) + eth0, where 
+     eth0 is a shift set so that the minimum of V is zero. Returns
+     (*e) = V(x) and (*f) = -V'(x). */
 
   double dph1 = phval - phn_dis1;
   double dph2 = 2 * (phval - phn_dis2);
@@ -734,7 +734,7 @@ double exvol(int iflag)
     cutg = BOX/(double)ns;
     cellcalc(-1,0,list);
 
-    if (ns * ns * ns > MAXCELL) {printf("# cells > MAXCELL\n"); exit(-1);}
+    if (ns * ns * ns > MAXCELL) {printf("# cells %i > MAXCELL %i\n",ns*ns*ns,MAXCELL); exit(-1);}
     printf("<exvol>  #cells %i ns %i cutg %f\n",ns*ns*ns,ns,cutg);
     printf("<exvol>  eps %f sigsa %f krep %f\n",eps,sigsa,krep);
 

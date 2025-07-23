@@ -240,7 +240,7 @@ void cart2dof(void) {
       b[i] = b1;
        
       if (b1 > 5.0 || b1 < 2.0) 
-	fprintf(fp_log,"cart2dof bond: i %i %lf\n",i,b1);
+	fprintf(fp_log,"cart2dof bond %i: b %lf\n",i,b1);
     }    
   }
 
@@ -260,9 +260,8 @@ void cart2dof(void) {
       tmp = b1x * b2x + b1y * b2y + b1z * b2z;
       
       if (tmp > cthlim || tmp < -cthlim) {
-	fprintf(fp_log,"cart2dof bend: i %i tmp %le ",i,tmp);
-	fprintf(fp_log,"thn %lf thn2 %lf\n",thn[i]*rad2deg,thn2[i]*rad2deg);
-	fflush(fp_log);
+	fprintf(fp_log,"cart2dof bend %i: tmp %lf thn %lf thn2 %lf",
+		i,tmp,thn[i]*rad2deg,thn2[i]*rad2deg);
 	tmp = min(tmp,cthlim);
 	tmp = max(tmp,-cthlim);
       }
@@ -289,9 +288,8 @@ void cart2dof(void) {
       tmp = sx[i] * sx[j] + sy[i] * sy[j] + sz[i] * sz[j];
 
       if (tmp > 1.0 || tmp < -1.0) {
-	fprintf(fp_log,"cart2dof tors: i %i tmp %le ",i,tmp);
-	fprintf(fp_log,"phn %lf phn2 %lf th %lf th %lf\n",
-		phn[i]*rad2deg,phn2[i]*rad2deg,th[i]*rad2deg,th[j]*rad2deg); 
+	fprintf(fp_log,"cart2dof tors %i: tmp %lf phn %lf thn2 %lf",
+		i,tmp,phn[i]*rad2deg,phn2[i]*rad2deg);
 	tmp = min(tmp, 1.0);
 	tmp = max(tmp,-1.0);
       }
