@@ -336,17 +336,15 @@ double bond(int iflag) {
 	}
 	
 	if (FF_BOND == 2) {
-
 	  switch (dis2[i]) {
 	  case 1  : {bond_ecalc(&e2,&fb2,b[i]-bn_dis); break;}
 	  default : {bond_ecalc(&e2,&fb2,b[i]-bn2[i]); break;}
 	  }
-
 	  log_sum_merge(e1=et,e2,&et,fb1=fb,fb2,&fb,bet);
 	}
 
 	e += et;
-
+	
 	add_f(i,j,fb,bx[i],by[i],bz[i]);
       }
     }

@@ -1,9 +1,9 @@
 /************* simulation settings ******************************************/
 # define NTMP 1                    /* # temperatures                        */
-# define TMAX 1.02                 /* max temperature                       */
-# define TMIN 1.02                 /* min temperature                       */
+# define TMAX 0.84                 /* max temperature                       */
+# define TMIN 0.84                 /* min temperature                       */
 # define BOX 300                   /* simulation box                        */
-# define ISTART 0                  /* 0 native, 1 read, 2 random            */
+# define ISTART 1                  /* 0 native, 1 read, 2 random            */
 # define ISEED 1                   /* 1 randomize seed (/dev/urandom)       */
 /************* MD parameters ************************************************/
 # define MDSTEP (5000000000)       /* max # md steps                        */
@@ -39,7 +39,7 @@
 # define CONTMAP "smog_1j8i_r9-68_mirror_extra_20-24_9-46"
 # define CONTMAP2 "smog_2jp1_r8-52_sym"
 # define DISULFIDE "disulfide"
-# define START "native_1j8i_model1" 
+# define START "native_2jp1_fullchain"    //"native_1j8i_model1" 
 # define INPUT "input"
 # define INPUTG "inputg"
 # define CONTPAR "./"
