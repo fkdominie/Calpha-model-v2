@@ -1,9 +1,9 @@
 /************* simulation settings ******************************************/
 # define NTMP 1                    /* # temperatures                        */
-# define TMAX 0.84                 /* max temperature                       */
-# define TMIN 0.84                 /* min temperature                       */
+# define TMAX 0.88                 /* max temperature                       */
+# define TMIN 0.88                 /* min temperature                       */
 # define BOX 300                   /* simulation box                        */
-# define ISTART 1                  /* 0 native, 1 read, 2 random            */
+# define ISTART 0                  /* 0 native, 1 read, 2 random            */
 # define ISEED 1                   /* 1 randomize seed (/dev/urandom)       */
 /************* MD parameters ************************************************/
 # define MDSTEP (5000000000)       /* max # md steps                        */
@@ -43,7 +43,7 @@
 # define INPUT "input"
 # define INPUTG "inputg"
 # define CONTPAR "./"
-# define CONTPAR2 "./"
+# define CONTPAR2 "./cont_param_2jp1_inter_0.92"
 # define DISREG "./dis_regions_1j8i"
 # define DISREG2 "./dis_regions_2jp1"
 # define BONDEDPAR "./"
