@@ -7,7 +7,8 @@ FILE *fp;
 
 int main(int argc, char *argv[]) {
 
-  fp = fopen("smog_2jp1_r8-52","r");
+  //  fp = fopen("smog_2jp1_r8-52","r");
+  fp = fopen("cmap_2jp1_r8-52_lc3_rc4.5","r");
   while (2 == fscanf(fp,"%i %i",&i,&j))
     cc[i][j] = 1;
 

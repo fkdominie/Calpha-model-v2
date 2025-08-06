@@ -14,7 +14,7 @@ int main (int argc,char *argv[])
 {
   int i,j;
   double o[NOBS],so[NTMP][NOBS];
-  double nn1=0,nn2=0,rmsd1=0.0,rmsd2=0.0;
+  double nn1=0,nn2=0,rmsd1=0,rmsd2=0,rmsd3=0,rmsd4=0,rg1=0,rg2=0;
   //  double qcut_a = 58;
   //  double qcut_b = 76;
     
@@ -43,22 +43,35 @@ int main (int argc,char *argv[])
     
     if ((imd+1) % ISAMP == 0) {
       
-      //      rmsd1 = rmsd_calc(xnat,ynat,znat,x,y,z,9,68);
-      //      rmsd2 = rmsd_calc(xnat2,ynat2,znat2,x,y,z,7,53);
-      rmsd1 = rmsd_calc(xnat,ynat,znat,x,y,z,7,53);
-      rmsd2 = rmsd_calc(xnat2,ynat2,znat2,x,y,z,9,68);
-   
-      o[1]=Ekin; o[2]=Epot; o[3]=Ebon; o[4]=Eben; o[5]=Erep; o[6]=Etor;
-      o[7]=Econ1; o[8]=Econ2; o[9]=Ecorr;  o[10]=Ecc; o[11]=Ecb;
+      /* Energies (o[] index = column number in output files) */
 
-      o[12] = rmsd1; 
-      o[13] = rmsd2;
-      o[14] = nn1 = no_cont();
-      o[15] = nn2 = no_cont2();
-      o[16] = dist_disulf(0);
-      o[17] = dist_disulf(1);
-      //      o[16] = (nn1 > qcut_a ? 1 : 0);
-      //      o[17] = (nn2 > qcut_b ? 1 : 0);
+      o[3]=Ekin; o[4]=Epot; o[5]=Ebon; o[6]=Eben; o[7]=Erep; o[8]=Etor;
+      o[9]=Econ1; o[10]=Econ2; o[11]=Ecorr;  o[12]=Ecc; o[13]=Ecb;
+
+      /* Custom */
+
+      /* two chains */
+
+      rg1 = sqrt( gyr2(iBeg[0],iEnd[0]) );
+      rg2 = sqrt( gyr2(iBeg[1],iEnd[1]) );
+      rmsd1 = rmsd_calc(xnat,ynat,znat,x,y,z,9,68);
+      rmsd2 = rmsd_calc(xnat2,ynat2,znat2,x,y,z,7,53);
+      rmsd3 = rmsd_calc(xnat,ynat,znat,x,y,z,102,161);
+      rmsd4 = rmsd_calc(xnat2,ynat2,znat2,x,y,z,100,146);
+
+      o[14] = rg1;
+      o[15] = rg2;
+      o[16] = rmsd1;
+      o[17] = rmsd2;
+      o[18] = rmsd3;
+      o[19] = rmsd4;
+      o[20] = no_cont(0);
+      o[21] = no_cont2(0);
+      o[22] = no_cont(1);
+      o[23] = no_cont2(1);
+      o[24] = no_cont2_ch2ch(0,1);
+      o[25] = dist_disulf(0);
+      o[26] = dist_disulf(1);
 
       if ((imd+1) > NTHERM) {
         so[ind][0]++; for (i=1 ; i<NOBS; i++) so[ind][i] += o[i];
