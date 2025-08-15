@@ -20,7 +20,7 @@ int main (int argc,char *argv[])
   int a1,a2,nruns;
   double o[NOBS],so[NTMP][NOBS];
   double po2[NTMP][NOBS],po[NRUN][NTMP][NOBS];
-  double nn1=0,nn2=0,rmsd1,rmsd2;
+  double nn1=0,nn2=0,rg1,rg2,rmsd1,rmsd2,rmsd3,rmsd4;
   long int imd,imd0;
   char fname[100];
   double qcut_a = 58;
@@ -45,7 +45,7 @@ int main (int argc,char *argv[])
   
   for (i = 0; i < NOBS; i++) {
     for (j = 0; j < NTMP; j++) {
-      so[j][i] = po2[j][i] = 0;
+      o[i] = so[j][i] = po2[j][i] = 0;
       for (k = 0; k < NRUN; k++) po[k][j][i] = 0;
     }
   }
@@ -70,10 +70,41 @@ int main (int argc,char *argv[])
       imd0 += ICONF;
       imd += ICONF;
       
-      cart2dof(0);
+      cart2dof();
       Epot=(Ebon=bond(0))+(Eben=bend(0))+(Erep=exvol(0))+(Etor=torsion(0))+
-	(Econ=cont(0))+(Ehp=hp(0))+(Ecc=crowd_crowd(0))+(Ecb=crowd_bead(0)); 
+ 	(Econ=cont(0))+(Ecc=crowd_crowd(0))+(Ecb=crowd_bead(0)); 
 
+      o[3]=Ekin; o[4]=Epot; o[5]=Ebon; o[6]=Eben; o[7]=Erep; o[8]=Etor;
+      o[9]=Econ1; o[10]=Econ2; o[11]=Ecorr;  o[12]=Ecc; o[13]=Ecb;
+
+      /* two chains */
+
+      rg1 = sqrt( gyr2(iBeg[0],iEnd[0]) );
+      rg2 = sqrt( gyr2(iBeg[1],iEnd[1]) );
+      rmsd1 = rmsd_calc(xnat,ynat,znat,x,y,z,9,68);
+      rmsd2 = rmsd_calc(xnat2,ynat2,znat2,x,y,z,7,53);
+      rmsd3 = rmsd_calc(xnat,ynat,znat,x,y,z,102,161);
+      rmsd4 = rmsd_calc(xnat2,ynat2,znat2,x,y,z,100,146);
+
+      o[14] = rg1;
+      o[15] = rg2;
+      o[16] = (rmsd1 < 4 ? 1 : 0);
+      o[17] = (rmsd2 < 4 ? 1 : 0);
+      o[18] = rmsd3;
+      o[19] = rmsd4;
+      /*      o[16] = rmsd1;
+	      o[17] = rmsd2;
+	      o[18] = rmsd3;
+	      o[19] = rmsd4; */
+      o[20] = no_cont(0);
+      o[21] = no_cont2(0);
+      o[22] = no_cont(1);
+      o[23] = no_cont2(1);
+      o[24] = no_cont2_ch2ch(0,1);
+      o[25] = dist_disulf(0);
+      o[26] = dist_disulf(1);
+
+      /*
       rmsd1 = rmsd_calc(xnat,ynat,znat,x,y,z,0,N-1);
       rmsd2 = rmsd_calc(xnat2,ynat2,znat2,x,y,z,0,N-1);
       
@@ -85,7 +116,7 @@ int main (int argc,char *argv[])
       o[14] = (nn1 = no_cont()) / max(npair,1);  
       o[15] = (nn2 = no_cont2()) / max(npair2,1);
       o[16] = (nn1 > qcut_a ? 1 : 0);
-      o[17] = (nn2 > qcut_b ? 1 : 0);
+      o[17] = (nn2 > qcut_b ? 1 : 0); */
 
       //      printf("imd %li %lf\n",imd,Epot);
 
@@ -135,17 +166,17 @@ int main (int argc,char *argv[])
   strcpy(str,OUTDIR);
   strcat(str,AVERAGES);
 
-  fp = fopen(str,"w");
+  /*  fp = fopen(str,"w");
   for (i = 0; i < NTMP; i++) {
     fprintf(fp,"%i %lf ",i,1./beta[i]);
     for (j = 1; j < NOBS; j++)
       fprintf(fp,"%.5f ",so[i][j]);
     fprintf(fp,"\n");
   }
-  fclose(fp);
+  fclose(fp); */
 
-  for (k = 1; k < NOBS; k++) {
-    sprintf(str,"%s%s_%d",OUTDIR,AVERAGES,k+2);
+  for (k = 3; k < NOBS; k++) {
+    sprintf(str,"%s%s_%d",OUTDIR,AVERAGES,k);
 
     fp = fopen(str,"w");    
     for (i = 0; i < NTMP; i++) {
