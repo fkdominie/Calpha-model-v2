@@ -16,8 +16,9 @@ int main (int argc,char *argv[])
   double o[NOBS],so[NTMP][NOBS];
   double nn1=0,nn2=0,rmsd1=0,rmsd2=0,rg1=0,rg2=0;
   double rmsd3=0,rmsd4=0;
-  //  double qcut_a = 58;
-  //  double qcut_b = 76;
+
+  double qcut_a = 95;  // monomer state cutoff
+  double qcut_b = 180; // dimer state cutoff
   
   printf("Exec: ");
   for (i = 0; i < argc; i++)
@@ -70,8 +71,9 @@ int main (int argc,char *argv[])
       o[22] = no_cont(1);
       o[23] = no_cont2(1);
       o[24] = no_cont2_ch2ch(0,1);
-      o[25] = dist_disulf(0);
-      o[26] = dist_disulf(1);
+      o[25] = (no_cont(0) >= qcut_a ? 1 : 0);
+      o[26] = (no_cont(1) >= qcut_a ? 1 : 0);
+      o[27] = (no_cont2(-1) >= qcut_b ? 1 : 0);
       
       /* single chain */
       /*      o[14] = rg1;

@@ -1,7 +1,7 @@
 /************* simulation settings ******************************************/
-# define NTMP 8                    /* # temperatures                        */
+# define NTMP 16                    /* # temperatures                        */
 # define TMAX 0.98                 /* max temperature                       */
-# define TMIN 0.86                 /* min temperature                       */
+# define TMIN 0.76                 /* min temperature                       */
 # define BOX 150                   /* simulation box                        */
 # define ISTART 0                  /* 0 native, 1 read, 2 random            */
 # define ISEED 1                   /* 1 randomize seed (/dev/urandom)       */
@@ -27,7 +27,7 @@
 # define FF_SALT 0                 /* screening effect (csalt) -- 1 on 0 off*/
 /************* measurements *************************************************/
 # define NBIN 200                  /* # bins                                */
-# define NOBS 27                   /* # observables                         */
+# define NOBS 28                   /* # observables                         */
 # define MAXCELL 100000            /* max # cells                           */
 # define MAXP 500                  /* max # contact pairs                   */
 # define SNAP1 5000                /* write snapshots to directory SNAPDIR  */
@@ -42,8 +42,8 @@
 # define START "native_2jp1_fullchain"  
 # define INPUT "input"
 # define INPUTG "inputg"
-# define CONTPAR ""// "./cont_param_1j8i_1.20"
-# define CONTPAR2 "./cont_param_2jp1_0.90"
+# define CONTPAR "" //"./cont_param_1j8i_1.14"
+# define CONTPAR2 "./cont_param_2jp1_0.89"
 # define DISREG "./dis_regions_1j8i"
 # define DISREG2 "./dis_regions_2jp1"
 # define BONDEDPAR "./"

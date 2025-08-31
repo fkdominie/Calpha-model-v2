@@ -10,60 +10,38 @@
 /****************************************************************************/
 /***** OBSERVABLES **********************************************************/
 /****************************************************************************/
-double dist_disulf(int n) {
-  return (n > ndpair-1 ? -1 : sqrt( dist2(id1[n],id2[n]) ) );
-}
-/****************************************************************************/
-int no_cont(int ch) {
-  /* Number of NATIVE contacts in chain ch (>=0) or any chain (<0) */
-  int i,j,m,n = 0;
+int contacts(int ilst[],int jlst[],double d2[],int nlst,int ch1,int ch2) {
+  int i,j,ic,jc,m,n = 0;
+  
+  for (m = 0; m < nlst; m++) {
+    ic = a2c[(i = ilst[m])];
+    jc = a2c[(j = jlst[m])];
 
-  for (m = 0; m < npair; m++) {
-    i = ip1[m]; j = ip2[m];
-    if ( (a2c[i] == ch && a2c[j] == ch) || ch < 0 ) 
-      n += ( dist2(i,j) < 1.44 * distp2[m] );
+    if ( (ic == ch1 && jc == ch2) || (jc == ch1 && ic == ch2) || ch1 < 0 || ch2 < 0 ) 
+      n += ( dist2(i,j) < 1.44 * d2[m] );
   }
   
   return n;
 }
 /****************************************************************************/
-int no_cont2(int ch) {
-  /* Number of NATIVE2 contacts in chain ch (>=0) or any chain (<0) */
-  int i,j,m,n = 0;
-
-  for (m = 0; m < npair2; m++) {
-    i = ip3[m]; j = ip4[m];
-    if ( (a2c[i] == ch && a2c[j] == ch) || ch < 0) 
-      n += ( dist2(i,j) < 1.44 * distp4[m] );
-  }
-  
-  return n;
+int ncont_map1(int ch) {
+  /* CONTMAP: # native contacts within chain ch (>=0) or total # (ch<0) */
+  return contacts(ip1,ip2,distp2,npair,ch,ch);
 }
 /****************************************************************************/
-int no_cont_ch2ch(int ch1,int ch2) {
-  /* Number of NATIVE contacts between chains ch1 and ch2 */
-  int i,j,m,n = 0;
-  
-  for (m = 0; m < npair; m++) {
-    i = ip1[m]; j = ip2[m];
-    if ((a2c[i] == ch1 && a2c[j] == ch2) || (a2c[j] == ch1 && a2c[i] == ch2))
-      n += ( dist2(i,j) < 1.44 * distp2[m] );
-  }
-  
-  return n;
+int ncont_map2(int ch) {
+  /* CONTMAP2: # native contacts within chain ch (>=0) or total # (ch<0) */
+  return contacts(ip3,ip4,distp4,npair2,ch,ch);
 }
 /****************************************************************************/
-int no_cont2_ch2ch(int ch1,int ch2) {
-  /* Number of NATIVE2 contacts between chains ch1 and ch2 */
-  int i,j,m,n = 0;
-  
-  for (m = 0; m < npair2; m++) {
-    i = ip3[m]; j = ip4[m];
-    if ((a2c[i] == ch1 && a2c[j] == ch2) || (a2c[j] == ch1 && a2c[i] == ch2))
-      n += ( dist2(i,j) < 1.44 * distp4[m] );
-  }
-  
-  return n;
+int ncont_map1_inter(int ch1,int ch2) {
+  /* CONTMAP: # native contacts between chains ch1 and ch2 */
+  return contacts(ip1,ip2,distp2,npair,ch1,ch2);
+}
+/****************************************************************************/
+int ncont_map2_inter(int ch1,int ch2) {
+  /* CONTMAP2: # native contacts between chains ch1 and ch2 */
+  return contacts(ip3,ip4,distp4,npair2,ch1,ch2);
 }
 /****************************************************************************/
 void histo_contmap(int iflag, int ind) {

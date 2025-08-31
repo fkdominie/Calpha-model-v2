@@ -157,7 +157,6 @@ double cont_corr(int iflag);
 double hp(int iflag);
 double exvol(int iflag);
 /* obs.c */
-double dist_disulf(int n);
 void center_of_mass2(int ich,double *xcm,double *ycm, double *zcm);
 void msd(int iflag);
 void hist_sq(int iflag,int ind);
@@ -178,10 +177,11 @@ double gyr2(int a1,int a2);
 double dcm(void);
 void histo_contmap(int iflag, int ind);
 void histo_contmap2(int iflag, int ind);
-int no_cont(int ch);
-int no_cont2(int ch);
-int no_cont_ch2ch(int ch1,int ch2);
-int no_cont2_ch2ch(int ch1,int ch2);
+int contacts(int ilst[],int jlst[],double d2[],int nlst,int ch1,int ch2);
+int ncont_map1(int ch);
+int ncont_map2(int ch);
+int ncont_map1_inter(int ch1,int ch2);
+int ncont_map2_inter(int ch1,int ch2);
 /* sampling */
 void tflip(double e);
 void mdstep(void);

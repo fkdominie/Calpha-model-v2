@@ -23,10 +23,11 @@ int main (int argc,char *argv[])
   double nn1=0,nn2=0,rg1,rg2,rmsd1,rmsd2,rmsd3,rmsd4;
   long int imd,imd0;
   char fname[100];
-  double qcut_a = 58;
-  double qcut_b = 76;
   FILE *fp;
   
+  double qcut_a = 95;  // monomer state cutoff
+  double qcut_b = 180; // dimer state cutoff
+
   if (argc != 4){
     printf("Give: conf filenames in C string style, start (a1), end (a2) indices.\n");
     exit(-1);
@@ -85,25 +86,24 @@ int main (int argc,char *argv[])
       rmsd2 = rmsd_calc(xnat2,ynat2,znat2,x,y,z,7,53);
       rmsd3 = rmsd_calc(xnat,ynat,znat,x,y,z,102,161);
       rmsd4 = rmsd_calc(xnat2,ynat2,znat2,x,y,z,100,146);
-
+      
       o[14] = rg1;
       o[15] = rg2;
-      o[16] = (rmsd1 < 4 ? 1 : 0);
-      o[17] = (rmsd2 < 4 ? 1 : 0);
+      o[16] = rmsd1;
+      o[17] = rmsd2;
       o[18] = rmsd3;
       o[19] = rmsd4;
-      /*      o[16] = rmsd1;
-	      o[17] = rmsd2;
-	      o[18] = rmsd3;
-	      o[19] = rmsd4; */
-      o[20] = no_cont(0);
-      o[21] = no_cont2(0);
-      o[22] = no_cont(1);
-      o[23] = no_cont2(1);
-      o[24] = no_cont2_ch2ch(0,1);
-      o[25] = dist_disulf(0);
-      o[26] = dist_disulf(1);
+      o[20] = ncont_map1(0);
+      o[21] = ncont_map2(0);
+      o[22] = ncont_map1(1);
+      o[23] = ncont_map2(1);
+      o[24] = ncont_map2_inter(0,1);
+      o[25] = (ncont_map1(0) >= qcut_a ? 1 : 0);
+      o[26] = (ncont_map1(1) >= qcut_a ? 1 : 0);
+      o[27] = (ncont_map2(-1) >= qcut_b ? 1 : 0);
 
+      /* single chain */
+      
       /*
       rmsd1 = rmsd_calc(xnat,ynat,znat,x,y,z,0,N-1);
       rmsd2 = rmsd_calc(xnat2,ynat2,znat2,x,y,z,0,N-1);
