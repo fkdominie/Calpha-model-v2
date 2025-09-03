@@ -6,7 +6,7 @@
 # define ISTART 0                  /* 0 native, 1 read, 2 random            */
 # define ISEED 1                   /* 1 randomize seed (/dev/urandom)       */
 /************* MD parameters ************************************************/
-# define MDSTEP (5000000000)       /* max # md steps                        */
+# define MDSTEP (10000000000)      /* max # md steps                        */
 # define NTHERM (10000)           /* # discarded steps                     */
 # define IFLIP (100)               /* temperature flips                     */
 # define ISAMP (100)               /* sample                                */

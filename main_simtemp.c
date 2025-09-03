@@ -66,14 +66,16 @@ int main (int argc,char *argv[])
       o[17] = rmsd2;
       o[18] = rmsd3;
       o[19] = rmsd4;
-      o[20] = no_cont(0);
-      o[21] = no_cont2(0);
-      o[22] = no_cont(1);
-      o[23] = no_cont2(1);
-      o[24] = no_cont2_ch2ch(0,1);
-      o[25] = (no_cont(0) >= qcut_a ? 1 : 0);
-      o[26] = (no_cont(1) >= qcut_a ? 1 : 0);
-      o[27] = (no_cont2(-1) >= qcut_b ? 1 : 0);
+      o[20] = ncont_map1(0);
+      o[21] = ncont_map2(0);
+      o[22] = ncont_map1(1);
+      o[23] = ncont_map2(1);
+      o[24] = ncont_map2_inter(0,1);
+      o[25] = (ncont_map1(0) >= qcut_a ? 1 : 0);
+      o[26] = (ncont_map1(1) >= qcut_a ? 1 : 0);
+      o[27] = (ncont_map2(-1) >= qcut_b ? 1 : 0);
+      //      o[25] = sqrt(dist2(id1[0],id2[0]));
+      //      o[26] = sqrt(dist2(id1[1],id2[1]));
 
       if ((imd+1) > NTHERM) {
         so[ind][0]++; for (i=1 ; i<NOBS; i++) so[ind][i] += o[i];
