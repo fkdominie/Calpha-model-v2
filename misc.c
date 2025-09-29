@@ -828,9 +828,10 @@ void cont_param_salt(char fn[],int ip1[],int ip2[],int n,double kcont[]) {
     i = ip1[m];
     j = ip2[m];
     
+    if (qres[i]*qres[j] == 0) continue;
+
     fac = csalt_fac(csalt,qres[i],qres[j]);
     kcont[m] *= fac;
-    if (qres[i]*qres[j] == 0) continue;
 
     fprintf(fp,"%3i %3i %3i %c %c qres %3i %3i saltfac %8.5lf kcon %8.5lf\n",
 	    m,i,j,seq[i],seq[j],qres[i],qres[j],fac,kcont[m]);

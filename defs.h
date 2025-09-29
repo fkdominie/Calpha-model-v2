@@ -2,7 +2,7 @@
 # define NTMP 16                    /* # temperatures                        */
 # define TMAX 0.98                 /* max temperature                       */
 # define TMIN 0.76                 /* min temperature                       */
-# define BOX 150                   /* simulation box                        */
+# define BOX 100                   /* simulation box                        */
 # define ISTART 0                  /* 0 native, 1 read, 2 random            */
 # define ISEED 1                   /* 1 randomize seed (/dev/urandom)       */
 /************* MD parameters ************************************************/
