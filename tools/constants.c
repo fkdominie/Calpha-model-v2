@@ -12,17 +12,19 @@ int main(int argc,char *argv[])
 {
   int j,k;
   int c,NCH=1,NCR=0;
+  const char *C2P_SPEC=NULL;
   FILE *fp1;
   
   if (argc == 1) {
-    printf("Usage: Give input filename, #chains (NCH) and #crowders (NCR).\n");
-    printf("Output: File sys.h with constants N, NCH, NCR, etc\n");
+    printf("Usage: Give input filename, #chains (NCH), chain->protein spec (NCH comma-separated nonnegative ints), and #crowders (NCR).\n");
+    printf("Output: File sys.h with constants N, NCH, C2P_SPEC, NCR, etc\n");
     exit(-1);
   }
 
   printf("argc %i\n",argc);
   if (argc >= 3) NCH = atoi(argv[2]);
-  if (argc == 4) NCR = atoi(argv[3]);
+  if (argc >= 4) C2P_SPEC = argv[3];
+  if (argc == 5) NCR = atoi(argv[4]);
  
   /* sequence */
 
@@ -44,6 +46,7 @@ int main(int argc,char *argv[])
   printf("# define N %i        /* # monomers */\n",k);
   printf("# define NCH %i      /* # chains   */\n",NCH);
   printf("# define NCR %i      /* # crowders   */\n",NCR);
+  printf("# define C2P_SPEC \"%s\" /* chain-->protein specification */\n",C2P_SPEC);
   printf("/***********************************/\n");  
 
   fp1=fopen("sys.h","w");
@@ -51,6 +54,7 @@ int main(int argc,char *argv[])
   fprintf(fp1,"# define N %i        /* # monomers */\n",k);
   fprintf(fp1,"# define NCH %i      /* # chains   */\n",NCH);
   fprintf(fp1,"# define NCR %i      /* # crowders   */\n",NCR);
+  fprintf(fp1,"# define C2P_SPEC \"%s\"     /* chain-->protein specification */\n",C2P_SPEC);
   fprintf(fp1,"/***********************************/\n");  
   fclose(fp1);
 

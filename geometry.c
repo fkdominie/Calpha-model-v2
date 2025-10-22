@@ -20,6 +20,9 @@ double sx[N],sy[N],sz[N];                /* auxilary vector                     
 double boxhf=BOX/2.0;                    /* half box length                       */
 int iBeg[NCH],iEnd[NCH];                 /* start and end indices of chains       */
 int a2c[N];                              /* monomer --> chain                     */
+int *a2p = NULL;                         /* monomer --> protein                   */
+int *c2p = NULL;                         /* chain --> protein                     */
+int NPROT = 0;                           /* number of proteins                    */
 int carterr=0,therr=0;
 /****************************************************************************/
 double vec2(int i,int j,double *rx,double *ry,double *rz) {

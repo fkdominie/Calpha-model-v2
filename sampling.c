@@ -99,6 +99,8 @@ void mdstep(void) {
     (Etor = torsion(0)) +
     (Erep = exvol(0)) +
     (Econ = cont(0)) +
+    (Ehp = hp(0)) +
+    (Eel = el(0)) +
     (Ecc = crowd_crowd(0)) +
     (Ecb = crowd_bead(0)); 
   

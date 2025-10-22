@@ -11,7 +11,7 @@
 # include "global.h"
 /*************** energy and force terms *************************************/
 double Ekin,Epot,Eben,Ebon,Erep;   /* energy terms                          */ 
-double Etor,Econ,Ecc,Ecb;          /* energy terms                          */             
+double Etor,Econ,Ehp,Eel,Ecc,Ecb;  /* energy terms                          */             
 double Econ1,Econ2,Ecorr;          /* energy terms                          */             
 double fx[N],fy[N],fz[N];          /* conformational force                  */
 double fxo[N],fyo[N],fzo[N];       /* conformational force old              */
@@ -29,10 +29,14 @@ double bn2[N],thn2[N],phn2[N];     /* native 2 reference values             */
 int npair;                         /* # native contacts                     */
 int npair2;                        /* # native contacts                     */
 int ndpair;
-int spair; 
+int spair;
+int qpair;                         /* hydrophobic native contact pairs      */
+int zpair;                         /* electrostatic native contact pairs    */
 int ip1[MAXP],ip2[MAXP];           /* list of contacts                      */
 int ip3[MAXP],ip4[MAXP];           /* list of contacts                      */
 int id1[MAXP],id2[MAXP];           /* list of contacts                      */
+int iq1[MAXP],iq2[MAXP];           /* list of contacts                      */
+int iz1[MAXP],iz2[MAXP];           /* list of contacts                      */
 int mc1[MAXP],mc2[MAXP];           /* common contacts                       */
 int nni1[MAXP],nnj1[MAXP];         /* nearest neighbors                     */
 int nni2[MAXP],nnj2[MAXP];
@@ -43,6 +47,8 @@ double kcon_nat[MAXP];             /* contact strengths                     */
 double kcon_nat2[MAXP];            /* contact strengths                     */
 int dis[N],dis2[N];                /* 1, disordered region, 0 otherwise     */
 int qres[N];                       /* charges: D,E -1; K,R +1; others 0     */
+double iqkap[MAXP];
+double izcharge[MAXP];
 /******************/
 double distp[MAXP];                /* distances                             */
 double distp2[MAXP];               /* distances                             */
@@ -57,6 +63,9 @@ double distg4[MAXP];               /* distances                             */
 short cc[N][N];                    /* 1 native contact, 0 otherwise         */
 /************* sequence effects *********************************************/
 int seq[N];                        /* amino acid sequence                   */
+int seqhp[N];                      /* sequence hp: >0 hp, 0 polar           */
+double kap[N];                     /* hydrophobicity strengths              */
+double charge[N];                  /* electrostatic charge                  */
 /************* auxiliary ****************************************************/
 double cthlim;
 /****************************************************************************/
@@ -131,7 +140,7 @@ void crowd_ecalc(double *e, double *f,double r2,double sigma,double rho) {
 /****************************************************************************/
 double crowd_crowd(int iflag){
   int i, j;
-  double d, dx, dy, dz, r2;                     /* To clculate distance between crowders */                      
+  double d, dx, dy, dz, r2;                     /* To calculate distance between crowders */                      
   double e = 0,fcc = 0,ecc = 0;                 /* To calculate force and energy between crowders */
   static double sigma,rho,rcut,rcut2,Dlim,Dlim2;/* To apply limitations and ecalsh penalty */
   FILE *fp;
@@ -1464,3 +1473,155 @@ double cont_corr(int iflag) {
   return 0;
 }
 /****************************************************************************/
+double hp(int iflag) {
+  int i,j,m,seqhp[N];                 
+  double r,r2,rx,ry,rz,dr,fr,edr,e=0;
+  static double  aco,bco,cq2;
+
+  // in testing
+  
+  if (FF_SEQ == 0) return 0;
+
+  if (iflag < 0) {
+    for (i=0;i<N;i++) {
+      seqhp[i] = 0;
+      switch (seq[i]) {
+      case 'A' : {seqhp[i] = 1.0; break;}
+      case 'V' : {seqhp[i] = 1.0; break;}
+      case 'L' : {seqhp[i] = 1.0; break;}
+      case 'I' : {seqhp[i] = 1.0; break;}
+      case 'M' : {seqhp[i] = 1.0; break;}
+      case 'W' : {seqhp[i] = 1.0; break;}
+      case 'F' : {seqhp[i] = 1.0; break;}
+      case 'Y' : {seqhp[i] = 1.0; break;}
+      default  : {seqhp[i] = 0.0; break;}
+      }
+    }
+    
+    for (i=0;i<N;i++) kap[i] = (seqhp[i] > 0 ? 1.0 : 0.0);
+    
+    qpair=0;
+    for (i=0;i<N;i++) {
+      if (seqhp[i] == 0) continue;
+      for (j=0;j<i;j++) {						/* Changed j<i-3 --> j<i */
+	if (seqhp[j] == 0) continue;
+	if (a2p[i] == a2p[j]) continue;			/* Added this line to skip same-protein interactions */
+	if (cc[i][j]!=1) {
+	  iq1[qpair]=i;
+	  iq2[qpair]=j;
+	  iqkap[qpair++]=kap[i]*kap[j];
+	}
+      }
+    }
+      
+    cq2=(sighp+cuthp)*(sighp+cuthp);
+    aco=-(1+cuthp*cuthp)*exp(-cuthp*cuthp/2);
+    bco=cuthp*exp(-cuthp*cuthp/2);
+
+    printf("<hp> non-native hp pairs: qpair %i\n",qpair);
+    printf("<hp> sighp %f cuthp %f\n",sighp,cuthp);
+    printf("<hp> aco %e bco %e\n",aco,bco);
+    return 0;
+  }
+  
+  for (m=0;m<qpair;m++) {
+    i=iq1[m]; j=iq2[m];
+    rx=x[j]-x[i]; bc(&rx);
+    ry=y[j]-y[i]; bc(&ry);
+    rz=z[j]-z[i]; bc(&rz);
+    if ((r2=rx*rx+ry*ry+rz*rz)>cq2) continue;
+    dr=(r=sqrt(r2))-sighp;
+    edr=exp(-dr*dr/2);
+    e-=iqkap[m]*(edr+aco+bco*dr);
+    fr=iqkap[m]*khp*(-dr*edr+bco)/r;
+    fx[i]-=fr*rx;
+    fy[i]-=fr*ry;
+    fz[i]-=fr*rz;
+    fx[j]+=fr*rx;
+    fy[j]+=fr*ry;
+    fz[j]+=fr*rz; 
+  }
+  return khp*e;
+}
+/****************************************************************************/
+double el(int iflag) {
+  int i,j,m,seqel[N];
+  double r,r2,rx,ry,rz,dr,dr2,dr3,dr4,dr5,er,V,dVdr,Veff,dVeff,S,dSdr,fr,e=0;
+  static double r_off,r_on,inv_w,r_off2,inv_lambdaD;
+
+  // in testing
+
+  if (FF_EL == 0) return 0;
+
+  if (iflag < 0) {
+    for (i=0;i<N;i++) {
+      seqel[i] = 0;
+      switch (seq[i]) {
+      case 'D' : {seqel[i] = -1; break;}
+      case 'E' : {seqel[i] = -1; break;}
+      case 'K' : {seqel[i] = +1; break;}
+      case 'R' : {seqel[i] = +1; break;}
+      default  : {seqel[i] =  0; break;}
+      }
+    }
+
+    for (i=0;i<N;i++) charge[i] = seqel[i];
+
+    zpair=0;
+    for (i=0;i<N;i++) {
+      if (seqel[i] == 0) continue;
+      for (j=0;j<i;j++) {
+    if (seqel[j] == 0) continue;
+    if (a2p[i] == a2p[j]) continue;
+    if (cc[i][j] != 1) {
+      iz1[zpair]=i;
+      iz2[zpair]=j;
+      izcharge[zpair++]=charge[i]*charge[j];
+    }
+        }
+      }
+      r_off = cutel;
+      r_on = 0.8 * r_off;
+      inv_w = 1.0 / (r_off - r_on);
+      r_off2 = r_off * r_off;
+      inv_lambdaD = 1.0/lambda_D;
+
+    printf("<el> non-native el pairs: zpair %i\n",zpair);
+    printf("<el> cutel %f\n",cutel);
+    printf("<el> r_off %e r_on %e\n",r_off,r_on);
+    return 0;
+  }
+
+  for (m=0;m<zpair;m++) {
+    i=iz1[m]; j=iz2[m];
+    rx=x[j]-x[i]; bc(&rx);
+    ry=y[j]-y[i]; bc(&ry);
+    rz=z[j]-z[i]; bc(&rz);
+    r2=rx*rx+ry*ry+rz*rz;
+    if (r2>=r_off2) continue;
+    if ((r=sqrt(r2))<1e-12) continue;
+    er=exp(-r*inv_lambdaD);
+    V=kel*izcharge[m]*(er/r);
+    dVdr=-kel*izcharge[m]*er*(1/(r2)+inv_lambdaD/r);
+    if (r<=r_on) {
+      Veff=V;
+      dVeff=dVdr;
+    } else {
+        dr=(r-r_on)*inv_w;
+        dr2=dr*dr,dr3=dr2*dr,dr4=dr3*dr,dr5=dr4*dr;
+        S=1.0-10.0*dr3+15.0*dr4-6.0*dr5;
+        dSdr=(-30.0*dr2+60.0*dr3-30.0*dr4)*inv_w;
+        Veff=S*V;
+        dVeff=S*dVdr+V*dSdr;
+    }
+    e+=Veff;
+    fr=(-dVeff)/r;
+    fx[i]-=fr*rx;
+    fy[i]-=fr*ry;
+    fz[i]-=fr*rz;
+    fx[j]+=fr*rx;
+    fy[j]+=fr*ry;
+    fz[j]+=fr*rz;
+  }
+  return e;
+}

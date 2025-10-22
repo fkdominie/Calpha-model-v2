@@ -17,8 +17,8 @@ int main (int argc,char *argv[])
   double nn1=0,nn2=0,rmsd1=0,rmsd2=0,rg1=0,rg2=0;
   double rmsd3=0,rmsd4=0;
 
-  double qcut_a = 95;  // monomer state cutoff
-  double qcut_b = 180; // dimer state cutoff
+  double qcut_a = 95;  // fold A cutoff
+  double qcut_b = 180; // fold B cutoff
   
   printf("Exec: ");
   for (i = 0; i < argc; i++)
@@ -47,7 +47,7 @@ int main (int argc,char *argv[])
       /* Energies (o[] index = column number in output files) */
 
       o[3]=Ekin; o[4]=Epot; o[5]=Ebon; o[6]=Eben; o[7]=Erep; o[8]=Etor;
-      o[9]=Econ1; o[10]=Econ2; o[11]=Ecorr;  o[12]=Ecc; o[13]=Ecb;
+      o[9]=Econ1; o[10]=Econ2; o[11]=Ecorr;  o[12]=Ecc; o[13]=Ecb; o[14]=Ehp; o[15]=Eel;
 
       /* Custom */
 
@@ -60,12 +60,12 @@ int main (int argc,char *argv[])
       rmsd3 = rmsd_calc(xnat,ynat,znat,x,y,z,102,161);
       rmsd4 = rmsd_calc(xnat2,ynat2,znat2,x,y,z,100,146);
 
-      o[14] = rg1;
-      o[15] = rg2;
-      o[16] = rmsd1;
-      o[17] = rmsd2;
-      o[18] = rmsd3;
-      o[19] = rmsd4;
+      o[16] = rg1;
+      o[17] = rg2;
+      o[18] = rmsd1;
+      o[19] = rmsd2;
+      // o[18] = rmsd3;
+      // o[19] = rmsd4;
       o[20] = ncont_map1(0);
       o[21] = ncont_map2(0);
       o[22] = ncont_map1(1);

@@ -31,7 +31,7 @@ void read_disregs(char fn[],int *dis);
 void printinfo(void) {
   printf("\n");
   printf("Simulation parameters: \n");
-  printf("  N %i NCH %i NCR %i \n",N,NCH,NCR);
+  printf("  N %i NCH %i NCR %i NPROT %i \n",N,NCH,NCR,NPROT);
   printf("  MDSTEP %li NTHERM %i\n",(long)MDSTEP,NTHERM);
   printf("  IRT %i ICONF %i ISTART %i\n",IRT,ICONF,ISTART);
   printf("  NTMP %i TMIN %lf TMAX %lf \n",NTMP, TMIN, TMAX);
@@ -39,6 +39,8 @@ void printinfo(void) {
   printf("Force field:\n");
   printf("  FF_BOND %i FF_BEND %i FF_TORS %i FF_CONT %i\n",
 	 FF_BOND,FF_BEND,FF_TORS,FF_CONT);
+  printf("  FF_SEQ %i FF_EL %i FF_SALT %i FF_DISULF %i\n",
+	 FF_SEQ,FF_EL,FF_SALT,FF_DISULF);
   if (NCR > 0){
     printf("Interaction parameters crowders:\n");
     printf("  rcrowd %lf srefcr %lf\n",rcrowd,srefcr);
@@ -172,7 +174,7 @@ int read_checkpnt(void) {
     fx[i] = fy[i] = fz[i] = 0;
 
   Epot=(Ebon=bond(0))+(Eben=bend(0))+(Erep=exvol(0))+(Etor=torsion(0))+
-    (Econ=cont(0))+(Ecc=crowd_crowd(0))+(Ecb=crowd_bead(0)); 
+    (Econ=cont(0))+(Ehp=hp(0))+(Eel=el(0))+(Ecc=crowd_crowd(0))+(Ecb=crowd_bead(0)); 
   
   Ekin = 0;
   for (i=0;i<N;i++)
@@ -206,7 +208,7 @@ void write_checkpnt(void) {
     fxc[i] = fyc[i] = fzc[i] = 0;
 
   Epot=(Ebon=bond(0))+(Eben=bend(0))+(Erep=exvol(0))+(Etor=torsion(0))+
-    (Econ=cont(0))+(Ecc=crowd_crowd(0))+(Ecb=crowd_bead(0)); 
+    (Econ=cont(0))+(Ehp=hp(0))+(Eel=el(0))+(Ecc=crowd_crowd(0))+(Ecb=crowd_bead(0)); 
   
   Ekin = 0;
   for (i=0;i<N;i++)
@@ -786,30 +788,52 @@ int relax_crowders(void) {
   return 0;
 }
 /****************************************************************************/
-void read_cont_param(char fn[],int ip1[],int ip2[],int npair,double kcont[]) {
-  int i,j,m = 0;
-  double kread;
-  FILE *fp;
-  
-  if ( (fp = fopen(fn,"r")) != NULL ) {
-
-    while (3 == fscanf(fp,"%i %i %lf\n",&i,&j,&kread)) {
-    
-      for (m = 0; m < npair; ++m) {
-	if ( (i == ip1[m] && j == ip2[m]) ||
-	     (i == ip2[m] && j == ip1[m]) ) break;
-      }
-      
-      if (m == npair) {
-	printf("<read_contpar> (%s) unknown contact %i %i %i\n",fn, m,i,j);
-	continue;
-      }
-      
-      kcont[m] = kread;
-      printf("<read_contpar> (%s) setting strength of contact %i %i %i to %lf\n",
-	     fn,m,i,j,kcont[m]);
+//–– Convert “123.4” or “NCS1”/“NCS2” into a double
+static double lookup_strength(const char *tok) {
+    // numeric literal?
+    if (isdigit(tok[0]) || tok[0]=='-' || tok[0]=='.') {
+        return atof(tok);
     }
-  }
+    // symbolic constants
+    if (strcmp(tok, "NCS1")==0) return (double) NCS1;
+    if (strcmp(tok, "NCS2")==0) return (double) NCS2;
+    fprintf(stderr, "Unknown contact strength '%s'\n", tok);
+    exit(EXIT_FAILURE);
+}
+/****************************************************************************/
+void read_cont_param(char fn[],
+                     int  ip1[],
+                     int  ip2[],
+                     int  npair,
+                     double kcont[])
+{
+    int    i, j, m;
+    double kread;
+    char   tok[32];
+    FILE  *fp;
+
+    if ((fp = fopen(fn, "r")) != NULL) {
+        while (fscanf(fp, "%i %i %31s\n", &i, &j, tok) == 3) {
+            kread = lookup_strength(tok);
+
+            for (m = 0;  m < npair;  ++m) {
+                if ((i == ip1[m] && j == ip2[m]) ||
+                    (i == ip2[m] && j == ip1[m])) {
+                    break;
+                }
+            }
+            if (m == npair) {
+                printf("<read_contpar> (%s) unknown contact %i %i %i\n",
+                       fn, m, i, j);
+                continue;
+            }
+
+            kcont[m] = kread;
+            printf("<read_contpar> (%s) setting strength of contact %i %i %i to %lf\n",
+                   fn, m, i, j, kcont[m]);
+        }
+	fclose(fp);
+    }
 }
 /****************************************************************************/
 void cont_param_salt(char fn[],int ip1[],int ip2[],int n,double kcont[]) {
@@ -837,6 +861,44 @@ void cont_param_salt(char fn[],int ip1[],int ip2[],int n,double kcont[]) {
 	    m,i,j,seq[i],seq[j],qres[i],qres[j],fac,kcont[m]);
   }
   fclose(fp);
+}
+/****************************************************************************/
+static int parse_c2p_from_string(const char *spec) {
+    // spec format: "0,0,0,0,1" (NCH comma-separated nonnegative ints)
+    c2p = (int*)malloc(NCH * sizeof *c2p);
+    int c = 0;
+    const char *p = spec;
+    while (*p && c < NCH) {
+        int id = 0, got = 0;
+        while (*p >= '0' && *p <= '9') { id = id*10 + (*p - '0'); p++; got = 1; }
+        if (!got) return 0;
+        c2p[c] = id;
+        if (NPROT <= id) NPROT = id + 1;
+        c++;
+        if (*p == ',') p++;
+    }
+    return (c == NCH);
+}
+
+void build_protein_maps(const char *spec) {
+    if (a2p) return;                        // already built
+
+    if (spec) {
+        if (!parse_c2p_from_string(spec)) {
+            fprintf(stderr,"[prot] Bad c2p spec: \"%s\"\n", spec);
+            exit(1);
+        }
+    } else {
+        // fallback: each chain is its own protein
+        c2p = (int*)malloc(NCH * sizeof *c2p);
+        for (int c=0; c<NCH; c++) c2p[c] = c;
+        NPROT = NCH;
+    }
+
+    a2p = (int*)malloc(N * sizeof *a2p);
+    for (int i=0; i<N; i++) a2p[i] = c2p[a2c[i]];
+
+    fprintf(stdout, "<prot> NCH=%d  NPROT=%d  a2p built\n", NCH, NPROT);
 }
 /****************************************************************************/
 /***** INITIALIZATION *******************************************************/
@@ -872,6 +934,7 @@ void init(int iflag) {
     iEnd[j] = k-1;
   }
   fclose(fp1);
+  build_protein_maps(C2P_SPEC);
 
   /* read g parameters */
 
@@ -953,6 +1016,8 @@ void init(int iflag) {
   kph1*=eps;
   kph3*=eps;
   kcon*=eps;
+  khp*=eps;
+  kel*=eps;
   krep*=eps;
   eclash*=eps;
 
@@ -1116,6 +1181,8 @@ void init(int iflag) {
   torsion(-1);
   exvol(-1);
   cont(-1);
+  hp(-1);
+  el(-1);
 
   read_conf(-1,"","");
   histo_bond(-1);
@@ -1208,7 +1275,7 @@ void init(int iflag) {
   for (i = 0; i < NCR; i++) fxc[i]=fyc[i]=fzc[i]=0;
 
   Epot=(Ebon=bond(0))+(Eben=bend(0))+(Erep=exvol(0))+(Etor=torsion(0))+
-    (Econ=cont(0))+(Ecc=crowd_crowd(0))+(Ecb=crowd_bead(0));
+    (Econ=cont(0))+(Ehp=hp(0))+(Eel=el(0))+(Ecc=crowd_crowd(0))+(Ecb=crowd_bead(0));
 
   for (i = 0; i < NCR; i++) {
     frcdx[i] = gasdev2() * tconstcr[ind];
@@ -1232,7 +1299,7 @@ void init(int iflag) {
   printf("  Ekin %f Epot %f\n",Ekin,Epot);
   printf("  Ebon %f Eben %f Erep %f Etor %f Econ %f Econ1 %lf Econ2 %lf Ecorr %lf\n",
 	 Ebon,Eben,Erep,Etor,Econ,Econ1,Econ2,Ecorr);
-  printf("  Ecc %f Ecb %f\n",Ecc,Ecb);
+  printf("  Ehp %f Eel %f Ecc %f Ecb %f\n",Ehp,Eel,Ecc,Ecb);
 
   /* write potential functions to file */
   
@@ -1244,6 +1311,8 @@ void init(int iflag) {
   cont2(1);
   crowd_crowd(1);
   crowd_bead(1); 
+  hp(1);
+  el(1);
   
   return ;
 }
