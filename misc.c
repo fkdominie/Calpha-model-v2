@@ -173,9 +173,11 @@ int read_checkpnt(void) {
   for (i = 0; i < N; i++)
     fx[i] = fy[i] = fz[i] = 0;
 
-  Epot=(Ebon=bond(0))+(Eben=bend(0))+(Erep=exvol(0))+(Etor=torsion(0))+
-    (Econ=cont(0))+(Ehp=hp(0))+(Eel=el(0))+(Ecc=crowd_crowd(0))+(Ecb=crowd_bead(0)); 
-  
+  exvol(0,&Erep,&Ehp,&Eel); 
+ 
+  Epot=(Ebon=bond(0))+(Eben=bend(0))+(Erep)+(Etor=torsion(0))+
+    (Econ=cont(0))+(Ehp)+(Eel)+(Ecc=crowd_crowd(0))+(Ecb=crowd_bead(0));
+
   Ekin = 0;
   for (i=0;i<N;i++)
     Ekin += vx[i]*vx[i]+vy[i]*vy[i]+vz[i]*vz[i];
@@ -207,8 +209,11 @@ void write_checkpnt(void) {
   for (i = 0; i < NCR; i++)
     fxc[i] = fyc[i] = fzc[i] = 0;
 
-  Epot=(Ebon=bond(0))+(Eben=bend(0))+(Erep=exvol(0))+(Etor=torsion(0))+
-    (Econ=cont(0))+(Ehp=hp(0))+(Eel=el(0))+(Ecc=crowd_crowd(0))+(Ecb=crowd_bead(0)); 
+  exvol(0,&Erep,&Ehp,&Eel); 
+ 
+  Epot=(Ebon=bond(0))+(Eben=bend(0))+(Erep)+(Etor=torsion(0))+
+    (Econ=cont(0))+(Ehp)+(Eel)+(Ecc=crowd_crowd(0))+(Ecb=crowd_bead(0));
+
   
   Ekin = 0;
   for (i=0;i<N;i++)
@@ -704,7 +709,9 @@ int relax_chains(int ich) {
   else
     printf("<init> Relaxing chain %i... \n",ich);
     
-  Erel = Eold = exvol(0) + cont(0);
+  exvol(0,&Erep,&Ehp,&Eel); 
+ 
+  Erel = Eold = Erep + cont(0);
  
   while (Erel > N * rfac * eps)  {
 
@@ -715,8 +722,10 @@ int relax_chains(int ich) {
       i = iBeg[icur] + ran3n(&seed) * (iEnd[icur] - iBeg[icur] + 1);
       ph[i] =  pi * (2 * ran3n(&seed) - 1);
       dof2cart(0);
-	
-      if ( (Erel = exvol(0) + cont(0)) < Eold ) {
+	    
+      exvol(0,&Erep,&Ehp,&Eel); 
+      
+      if ( (Erel + cont(0)) < Eold ) {
 	  pho[i] = ph[i];
 	  Eold = Erel;
 	} else {
@@ -731,8 +740,8 @@ int relax_chains(int ich) {
       dz = 10 * (2 * ran3n(&seed) - 1);
       
       trans(icur, dx, dy, dz);
-      
-      if ((Erel = exvol(0) + cont(0)) < Eold) {
+      exvol(0,&Erep,&Ehp,&Eel); 
+      if ((Erel = Erep + cont(0)) < Eold) {
 	  Eold = Erel;
 	} else {
 	  trans(icur, -dx, -dy, -dz);
@@ -857,7 +866,7 @@ void cont_param_salt(char fn[],int ip1[],int ip2[],int n,double kcont[]) {
     fac = csalt_fac(csalt,qres[i],qres[j]);
     kcont[m] *= fac;
 
-    fprintf(fp,"%3i %3i %3i %c %c qres %3i %3i saltfac %8.5lf kcon %8.5lf\n",
+    fprintf(fp,"%3i %3i %3i %c %c qres %3lf %3lf saltfac %8.5lf kcon %8.5lf\n",
 	    m,i,j,seq[i],seq[j],qres[i],qres[j],fac,kcont[m]);
   }
   fclose(fp);
@@ -922,12 +931,23 @@ void init(int iflag) {
 	seq[k] = c;
 	a2c[k] = j;
 	switch (c) {
-	case 'D' : {qres[k] = -1; break;}
-	case 'E' : {qres[k] = -1; break;}
-	case 'K' : {qres[k] = +1; break;}
-	case 'R' : {qres[k] = +1; break;}
-	default  : {qres[k] =  0; break;}
+	case 'D' : {qres[k] = -1.0;  break;}
+	case 'E' : {qres[k] = -1.0;  break;}
+	case 'K' : {qres[k] = +1.0;  break;}
+	case 'R' : {qres[k] = +1.0;  break;}
+	default  : {qres[k] =  0.0;  break;}
 	}
+  switch (c) {
+  case 'A' : {seqhp[k] = 1; iqkap[k] = 1.0; break;}
+  case 'V' : {seqhp[k] = 1; iqkap[k] = 1.0; break;}
+  case 'L' : {seqhp[k] = 1; iqkap[k] = 1.0; break;}
+  case 'I' : {seqhp[k] = 1; iqkap[k] = 1.0; break;}
+  case 'M' : {seqhp[k] = 1; iqkap[k] = 1.0; break;}
+  case 'W' : {seqhp[k] = 1; iqkap[k] = 1.0; break;}
+  case 'F' : {seqhp[k] = 1; iqkap[k] = 1.0; break;}
+  case 'Y' : {seqhp[k] = 1; iqkap[k] = 1.0; break;}
+  default  : {seqhp[k] = 0; iqkap[k] = 0.0; break;}
+  }
 	++k;
       }
     }
@@ -1173,16 +1193,18 @@ void init(int iflag) {
 
   /* initialize functions */
   
+  double tmpf;
+  
   dof2cart(-1);
   crowd_crowd(-1);
   crowd_bead(-1);
   bond(-1);
   bend(-1);
   torsion(-1);
-  exvol(-1);
+  exvol(-1,&tmpf,&tmpf,&tmpf);
   cont(-1);
-  hp(-1);
-  el(-1);
+  hp(-1,0,0,0,0,0,0);
+  el(-1,0,0,0,0,0,0);
 
   read_conf(-1,"","");
   histo_bond(-1);
@@ -1274,8 +1296,10 @@ void init(int iflag) {
   for (i = 0; i < N; i++) fx[i]=fy[i]=fz[i]=0;
   for (i = 0; i < NCR; i++) fxc[i]=fyc[i]=fzc[i]=0;
 
-  Epot=(Ebon=bond(0))+(Eben=bend(0))+(Erep=exvol(0))+(Etor=torsion(0))+
-    (Econ=cont(0))+(Ehp=hp(0))+(Eel=el(0))+(Ecc=crowd_crowd(0))+(Ecb=crowd_bead(0));
+  exvol(0,&Erep,&Ehp,&Eel); 
+ 
+  Epot=(Ebon=bond(0))+(Eben=bend(0))+(Erep)+(Etor=torsion(0))+
+    (Econ=cont(0))+(Ehp)+(Eel)+(Ecc=crowd_crowd(0))+(Ecb=crowd_bead(0));
 
   for (i = 0; i < NCR; i++) {
     frcdx[i] = gasdev2() * tconstcr[ind];
@@ -1311,8 +1335,8 @@ void init(int iflag) {
   cont2(1);
   crowd_crowd(1);
   crowd_bead(1); 
-  hp(1);
-  el(1);
+ // hp(1,0,0);
+ // el(1);
   
   return ;
 }

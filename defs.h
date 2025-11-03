@@ -20,11 +20,11 @@
 # define CHAIN_TO_BOX 1            /* translate chains/crowders periodically*/
                                    /* to original image in box [0...BOX]    */
 /************* force field selection ****************************************/
-# define FF_BOND 2                 /* bond() -- 1 on, 2 dual, 0 off         */
-# define FF_BEND 2                 /* bend() -- 1 on, 2 dual, 0 off         */
-# define FF_TORS 2                 /* tors() -- 1 on, 2 dual, 0 off         */
-# define FF_CONT 2                 /* cont() -- 1 on, 2 dual, 0 off         */
-# define FF_EXVOL 1                /* exvol()-- 1 on, 0 off                 */
+# define FF_BOND 1                 /* bond() -- 1 on, 2 dual, 0 off         */
+# define FF_BEND 1                 /* bend() -- 1 on, 2 dual, 0 off         */
+# define FF_TORS 1                 /* tors() -- 1 on, 2 dual, 0 off         */
+# define FF_CONT 1                 /* cont() -- 1 on, 2 dual, 0 off         */
+# define FF_EXVOL 1                /* exvol()-- 1 on, 0 off (if off, hp() and el() also off)*/
 # define FF_SEQ 1                  /* hp()   -- 1 on, 0 off                 */
 # define FF_EL 1                   /* el()   -- 1 on, 0 off                 */
 # define FF_DISULF 0               /* disulfide bonds -- 1 on, 2 dual, 0 off*/
@@ -41,7 +41,7 @@
 /************* files input **************************************************/
 # define NATIVE "native_4HHB-1YMB"
 # define NATIVE2 ""
-# define CONTMAP "smog_4HHB-1YMB_smog"
+# define CONTMAP "smog_4HHB-1YMB"
 # define CONTMAP2 ""
 # define DISULFIDE ""
 # define START "native_4HHB-1YMB"  

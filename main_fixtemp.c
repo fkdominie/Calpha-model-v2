@@ -114,6 +114,8 @@ int main (int argc,char *argv[])
   }
 
   printf("\nRun over\n\n");
+  printf("<hp> non-native hp pairs calculated: qpair %i\n",qpair);
+  printf("<el> non-native el pairs calculated: zpair %i\n",zpair);
   printf("carterr %i therr %i\n\n",carterr,therr);
   dumppdb("_stop.pdb",o,NOBS);
 

@@ -93,14 +93,15 @@ void mdstep(void) {
   for (i = 0; i < N; i++) fx[i] = fy[i] = fz[i] = 0;
   for (i = 0; i < NCR; i++) fxc[i] = fyc[i] = fzc[i] = 0;
   
+  exvol(0,&Erep,&Ehp,&Eel); 
   Epot =
     (Ebon = bond(0)) +
     (Eben = bend(0)) +
     (Etor = torsion(0)) +
-    (Erep = exvol(0)) +
+    (Erep)  +
     (Econ = cont(0)) +
-    (Ehp = hp(0)) +
-    (Eel = el(0)) +
+    (Ehp) +
+    (Eel) +
     (Ecc = crowd_crowd(0)) +
     (Ecb = crowd_bead(0)); 
   

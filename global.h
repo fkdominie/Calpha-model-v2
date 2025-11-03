@@ -16,8 +16,6 @@ extern int *c2p;
 extern int NPROT;
 extern const double vbox;
 extern int seq[];                   
-extern double kap[];
-extern double charge[];
 /************* energies and forces ******************************************/
 extern double Ekin,Epot,Eben,Ebon,Erep;  
 extern double Etor,Econ,Ehp,Eel;
@@ -61,7 +59,8 @@ extern double thn_disa,thn_disb,ksi_disa,ksi_disb;
 extern double phn_dis1,phn_dis2,phn_dis3;
 extern double kph_dis1,kph_dis2,kph_dis3;
 extern double eth0,eph0,fscal;
-extern int qres[];
+extern double qres[];
+extern int seqhp[];
 extern double csalt;
 /************* native structure *********************************************/
 extern double xnat[],ynat[],znat[];
@@ -169,9 +168,9 @@ double csalt_fac(double csalt,double qi, double qj);
 double cont(int iflag);
 double cont2(int iflag);
 double cont_corr(int iflag);
-double hp(int iflag);
-double el(int iflag);
-double exvol(int iflag);
+double hp(int iflag,int i,int j,double r2,double rx, double ry, double rz);
+double el(int iflag,int i,int j,double r2,double rx, double ry, double rz);
+double exvol(int iflag,double *Erep,double *Ehp,double *Eel);
 /* obs.c */
 void center_of_mass2(int ich,double *xcm,double *ycm, double *zcm);
 void msd(int iflag);
