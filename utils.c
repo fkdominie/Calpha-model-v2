@@ -14,7 +14,7 @@ double xcro[NCR], ycro[NCR], zcro[NCR];  /* Back up for crowders coordinates*/
 /****************************************************************************/
 /***** input/output *********************************************************/
 /****************************************************************************/
-void dumppdb(char *fn,double *o,int nobs) {
+/* void dumppdb(char *fn,double *o,int nobs) {
   int i,j,n;
   char str[100];
   FILE *fp;
@@ -43,6 +43,62 @@ void dumppdb(char *fn,double *o,int nobs) {
   }
   
   fclose(fp);
+} */
+/****************************************************************************/
+static inline void write_atom_line(FILE *fp, int serial,
+                                   const char *atom, const char *resn,
+                                   char chain, int resseq,
+                                   double x, double y, double z,
+                                   double occ, double bfac)
+{
+    /* pad atom/resn to safe strings */
+    char atom4[5] = "    ";
+    char res3[4]  = "   ";
+    snprintf(atom4, sizeof atom4, "%4s", atom);
+    snprintf(res3,  sizeof res3,  "%3s", resn);
+
+    fprintf(fp,
+        "ATOM  %5d %-4.4s %3.3s %1c%4d%1c   %8.3f%8.3f%8.3f%6.2f%6.2f\n",
+        serial, atom4, res3, chain, resseq, ' ',
+        x, y, z, occ, bfac);
+}
+
+void dumppdb(char *fn, double *o, int nobs) {
+    int i, j, n;
+    char path[256];
+    FILE *fp;
+
+    strcpy(path, OUTDIR);
+    strcat(path, fn);
+
+    fp = fopen(path, "w");
+    if (!fp) return;
+
+    for (i = 1; i < nobs; i++)
+        fprintf(fp, "# REMARK %d %lf\n", i, o[i]);
+
+    for (j = 0; j < NCH; j++) {
+        if (CHAIN_TO_BOX) ch2box(j);
+        for (i = iBeg[j]; i <= iEnd[j]; i++) {
+            int serial = i + 1;                      
+            int resseq = (i - iBeg[j]) + 1;          
+            char chain = 'A' + (j % 26);
+            write_atom_line(fp, serial, "CA", "ALA",
+                            chain, resseq, x[i], y[i], z[i], 1.00, 0.00);
+        }
+    }
+
+    for (i = n = 0; i < NCR; i++) {
+        if (CHAIN_TO_BOX) cr2box(i);
+        int serial = (N) + (++n);
+        fprintf(fp,
+            "HETATM%5d  O   HOH %1c%4d%1c   %8.3f%8.3f%8.3f%6.2f%6.2f\n",
+            serial, 'W', (i+1), ' ',
+            xcr[i], ycr[i], zcr[i], 1.00, 0.00);
+    }
+
+    fprintf(fp, "END\n");
+    fclose(fp);
 }
 /****************************************************************************/
 /***** Random numbers *******************************************************/
@@ -138,6 +194,7 @@ double rmsd_calc(double *x1,double *y1,double *z1,
 
   if (i1 < 0 || i1 > N-1) return 0;
   if (i2 < 0 || i2 > N-1) return 0;
+  if (RMSD == 0) return 0;
   
   for (i = i1; i <= i2; i++) {
       xref1[i] = x1[i];

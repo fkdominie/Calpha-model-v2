@@ -15,7 +15,7 @@ int main (int argc,char *argv[])
   int i,j;
   double o[NOBS],so[NTMP][NOBS];
   double nn1=0,nn2=0,rmsd1=0,rmsd2=0,rg1=0,rg2=0;
-  double rmsd3=0,rmsd4=0;
+  // double rmsd3=0,rmsd4=0;
 
   double qcut_a = 95;  // fold A cutoff
   double qcut_b = 180; // fold B cutoff
@@ -57,8 +57,8 @@ int main (int argc,char *argv[])
       rg2 = sqrt( gyr2(iBeg[1],iEnd[1]) );
       rmsd1 = rmsd_calc(xnat,ynat,znat,x,y,z,9,68);
       rmsd2 = rmsd_calc(xnat2,ynat2,znat2,x,y,z,7,53);
-      rmsd3 = rmsd_calc(xnat,ynat,znat,x,y,z,102,161);
-      rmsd4 = rmsd_calc(xnat2,ynat2,znat2,x,y,z,100,146);
+      // rmsd3 = rmsd_calc(xnat,ynat,znat,x,y,z,102,161);
+      // rmsd4 = rmsd_calc(xnat2,ynat2,znat2,x,y,z,100,146);
 
       o[16] = rg1;
       o[17] = rg2;
@@ -85,8 +85,8 @@ int main (int argc,char *argv[])
         histo_bend(0);
         histo_tors(0,5);
         histoe(0,Epot);
-	histo_cont1(0,ind,nn1);
-	histo_cont2(0,ind,nn2);
+	      histo_cont1(0,ind,nn1);
+	      histo_cont2(0,ind,nn2);
       }
 
     }

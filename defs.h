@@ -34,7 +34,7 @@
 # define NBIN 200                  /* # bins                                */
 # define NOBS 28                   /* # observables                         */
 # define MAXCELL 100000            /* max # cells                           */
-# define MAXP 20000                /* max # contact pairs                   */
+# define MAXP 40000                /* max # contact pairs                   */
 # define SNAP1 5000                /* write snapshots to directory SNAPDIR  */
 # define SNAP2 5000                /* for interval SNAP1 < imd < SNAP2      */
 # define RMSD 0                    /* 1 NATIVE, 2 NATIVE2, 0 off            */
